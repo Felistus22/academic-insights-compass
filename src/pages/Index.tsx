@@ -1,13 +1,61 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState, useEffect } from "react";
+import { AppProvider, useAppContext } from "@/contexts/AppContext";
+import Login from "@/components/Login";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardHome from "@/components/dashboard/DashboardHome";
+import Students from "@/components/dashboard/Students";
+import EnterMarks from "@/components/dashboard/EnterMarks";
+import Reports from "@/components/dashboard/Reports";
+import ActivityLogs from "@/components/dashboard/ActivityLogs";
+
+// Add the html2canvas and jsPDF dependencies
+<lov-add-dependency>html2canvas@1.4.1</lov-add-dependency>
+<lov-add-dependency>jspdf@2.5.1</lov-add-dependency>
+
+const DashboardContent = () => {
+  const { currentTeacher } = useAppContext();
+  const [activePage, setActivePage] = useState("dashboard");
+
+  // Redirect to login if not authenticated
+  if (!currentTeacher) {
+    return <Login />;
+  }
+
+  // Render the appropriate page based on activePage state
+  const renderPage = () => {
+    switch (activePage) {
+      case "dashboard":
+        return <DashboardHome />;
+      case "students":
+        return <Students />;
+      case "enterMarks":
+        return <EnterMarks />;
+      case "reports":
+        return <Reports />;
+      case "activityLogs":
+        return currentTeacher.role === "admin" ? (
+          <ActivityLogs />
+        ) : (
+          <DashboardHome />
+        );
+      default:
+        return <DashboardHome />;
+    }
+  };
+
+  return (
+    <DashboardLayout activePage={activePage} onNavigate={setActivePage}>
+      {renderPage()}
+    </DashboardLayout>
+  );
+};
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <AppProvider>
+      <DashboardContent />
+    </AppProvider>
   );
 };
 
