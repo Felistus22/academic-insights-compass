@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AppProvider, useAppContext } from "@/contexts/AppContext";
 import Login from "@/components/Login";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -8,10 +8,6 @@ import Students from "@/components/dashboard/Students";
 import EnterMarks from "@/components/dashboard/EnterMarks";
 import Reports from "@/components/dashboard/Reports";
 import ActivityLogs from "@/components/dashboard/ActivityLogs";
-
-// Add the html2canvas and jsPDF dependencies
-<lov-add-dependency>html2canvas@1.4.1</lov-add-dependency>
-<lov-add-dependency>jspdf@2.5.1</lov-add-dependency>
 
 const DashboardContent = () => {
   const { currentTeacher } = useAppContext();
