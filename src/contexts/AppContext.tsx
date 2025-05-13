@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Student, Subject, Exam, Mark, Teacher, ActivityLog } from "../types";
 import { initialData, loadFromLocalStorage, saveToLocalStorage } from "../data/mockData";
@@ -22,6 +21,12 @@ interface AppContextType {
   addActivityLog: (log: Omit<ActivityLog, "id" | "timestamp">) => void;
   getStudentMarks: (studentId: string) => Mark[];
   getFormStudents: (form: number) => Student[];
+  addStudent: (student: Omit<Student, "id">) => void;
+  updateStudent: (student: Student) => void;
+  deleteStudent: (studentId: string) => void;
+  addTeacher: (teacher: Omit<Teacher, "id">) => void;
+  updateTeacher: (teacher: Teacher) => void;
+  deleteTeacher: (teacherId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -206,6 +211,156 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return data.students.filter(student => student.form === form);
   };
 
+  // Student management functions
+  const addStudent = (studentData: Omit<Student, "id">) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can add students");
+      return;
+    }
+
+    const newStudent: Student = {
+      id: `std${Date.now()}`,
+      ...studentData
+    };
+
+    setData(prevData => ({
+      ...prevData,
+      students: [...prevData.students, newStudent]
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "STUDENT_ADD",
+      details: `Added new student: ${studentData.firstName} ${studentData.lastName}`
+    });
+
+    toast.success("Student added successfully");
+  };
+
+  const updateStudent = (updatedStudent: Student) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can update students");
+      return;
+    }
+
+    setData(prevData => ({
+      ...prevData,
+      students: prevData.students.map(student => 
+        student.id === updatedStudent.id ? updatedStudent : student
+      )
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "STUDENT_UPDATE",
+      details: `Updated student: ${updatedStudent.firstName} ${updatedStudent.lastName}`
+    });
+
+    toast.success("Student updated successfully");
+  };
+
+  const deleteStudent = (studentId: string) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can delete students");
+      return;
+    }
+
+    const studentToDelete = data.students.find(s => s.id === studentId);
+    if (!studentToDelete) return;
+
+    setData(prevData => ({
+      ...prevData,
+      students: prevData.students.filter(student => student.id !== studentId),
+      // Also remove any marks associated with the student
+      marks: prevData.marks.filter(mark => mark.studentId !== studentId)
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "STUDENT_DELETE",
+      details: `Deleted student: ${studentToDelete.firstName} ${studentToDelete.lastName}`
+    });
+
+    toast.success("Student deleted successfully");
+  };
+
+  // Teacher management functions
+  const addTeacher = (teacherData: Omit<Teacher, "id">) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can add teachers");
+      return;
+    }
+
+    const newTeacher: Teacher = {
+      id: `teacher${Date.now()}`,
+      ...teacherData
+    };
+
+    setData(prevData => ({
+      ...prevData,
+      teachers: [...prevData.teachers, newTeacher]
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "TEACHER_ADD",
+      details: `Added new teacher: ${teacherData.firstName} ${teacherData.lastName}`
+    });
+
+    toast.success("Teacher added successfully");
+  };
+
+  const updateTeacher = (updatedTeacher: Teacher) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can update teachers");
+      return;
+    }
+
+    setData(prevData => ({
+      ...prevData,
+      teachers: prevData.teachers.map(teacher => 
+        teacher.id === updatedTeacher.id ? updatedTeacher : teacher
+      )
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "TEACHER_UPDATE",
+      details: `Updated teacher: ${updatedTeacher.firstName} ${updatedTeacher.lastName}`
+    });
+
+    toast.success("Teacher updated successfully");
+  };
+
+  const deleteTeacher = (teacherId: string) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can delete teachers");
+      return;
+    }
+
+    // Don't allow deleting the current logged-in teacher
+    if (currentTeacher.id === teacherId) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+
+    const teacherToDelete = data.teachers.find(t => t.id === teacherId);
+    if (!teacherToDelete) return;
+
+    setData(prevData => ({
+      ...prevData,
+      teachers: prevData.teachers.filter(teacher => teacher.id !== teacherId)
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "TEACHER_DELETE",
+      details: `Deleted teacher: ${teacherToDelete.firstName} ${teacherToDelete.lastName}`
+    });
+
+    toast.success("Teacher deleted successfully");
+  };
+
   const contextValue: AppContextType = {
     ...data,
     currentTeacher,
@@ -218,7 +373,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addExam,
     addActivityLog,
     getStudentMarks,
-    getFormStudents
+    getFormStudents,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    addTeacher,
+    updateTeacher,
+    deleteTeacher
   };
 
   return (

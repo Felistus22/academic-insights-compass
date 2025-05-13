@@ -8,6 +8,8 @@ import Students from "@/components/dashboard/Students";
 import EnterMarks from "@/components/dashboard/EnterMarks";
 import Reports from "@/components/dashboard/Reports";
 import ActivityLogs from "@/components/dashboard/ActivityLogs";
+import ManageStudents from "@/components/dashboard/ManageStudents";
+import ManageTeachers from "@/components/dashboard/ManageTeachers";
 
 const DashboardContent = () => {
   const { currentTeacher } = useAppContext();
@@ -29,6 +31,18 @@ const DashboardContent = () => {
         return <EnterMarks />;
       case "reports":
         return <Reports />;
+      case "manageStudents":
+        return currentTeacher.role === "admin" ? (
+          <ManageStudents />
+        ) : (
+          <DashboardHome />
+        );
+      case "manageTeachers":
+        return currentTeacher.role === "admin" ? (
+          <ManageTeachers />
+        ) : (
+          <DashboardHome />
+        );
       case "activityLogs":
         return currentTeacher.role === "admin" ? (
           <ActivityLogs />
