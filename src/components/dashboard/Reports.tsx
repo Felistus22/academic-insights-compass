@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
+import { FilePdf, MessageSquare, Send, Share, WhatsApp } from "lucide-react";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -109,6 +110,23 @@ const Reports: React.FC = () => {
       toast.success(`Report sent to ${student.guardianName} successfully!`);
     }, 2000);
   };
+
+  // Share report via WhatsApp
+  const shareViaWhatsApp = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+    
+    const studentName = `${student.firstName} ${student.lastName}`;
+    const message = encodeURIComponent(
+      `Dear ${student.guardianName}, here is the academic report card for ${studentName} for ${selectedYear} Term ${selectedTerm}. Please review it at your earliest convenience.`
+    );
+    
+    // Open WhatsApp with pre-filled message
+    const whatsappURL = `https://wa.me/${student.guardianPhone.replace(/\D/g, '')}?text=${message}`;
+    window.open(whatsappURL, '_blank');
+    
+    toast.success(`Opening WhatsApp to share report with ${student.guardianName}`);
+  };
   
   return (
     <div className="space-y-6">
@@ -190,43 +208,23 @@ const Reports: React.FC = () => {
               {selectedStudent && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button onClick={generateStudentPDF}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mr-2"
-                    >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <path d="M10 12 12 16 16 10" />
-                    </svg>
+                    <FilePdf className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => sendSMS(selectedStudent)}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mr-2"
-                    >
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    Send to Guardian
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Send SMS to Guardian
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => shareViaWhatsApp(selectedStudent)}
+                    className="bg-green-500 text-white hover:bg-green-600 border-0"
+                  >
+                    <WhatsApp className="mr-2 h-4 w-4" />
+                    Share via WhatsApp
                   </Button>
                 </div>
               )}
@@ -305,22 +303,7 @@ const Reports: React.FC = () => {
               
               <div className="flex flex-wrap gap-2 mt-4">
                 <Button onClick={generateFormPDF}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="mr-2"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <path d="M10 12 12 16 16 10" />
-                  </svg>
+                  <FilePdf className="mr-2 h-4 w-4" />
                   Download PDF
                 </Button>
               </div>
