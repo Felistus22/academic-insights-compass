@@ -24,14 +24,15 @@ const Reports: React.FC = () => {
   const [selectedForm, setSelectedForm] = useState<string>("1");
   const [selectedYear, setSelectedYear] = useState<string>("2023");
   const [selectedTerm, setSelectedTerm] = useState<string>("1");
+  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   
   // Available years and terms
   const availableYears = Array.from(new Set(exams.map(exam => exam.year))).sort();
   
   // Generate PDF for student report
-  const generateStudentPDF = async () => {
+  const generateStudentPDF = async (forSharing: boolean = false) => {
     const reportElement = document.getElementById("student-report");
-    if (!reportElement) return;
+    if (!reportElement) return null;
     
     toast.info("Generating PDF...");
     
@@ -54,12 +55,24 @@ const Reports: React.FC = () => {
       const imgY = 0;
       
       pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save("student-report.pdf");
       
-      toast.success("PDF generated successfully!");
+      if (forSharing) {
+        // Return blob URL for sharing
+        const pdfBlob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        setGeneratedPdfUrl(blobUrl);
+        toast.success("PDF ready for sharing!");
+        return blobUrl;
+      } else {
+        // Download the PDF
+        pdf.save("student-report.pdf");
+        toast.success("PDF downloaded successfully!");
+        return null;
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF");
+      return null;
     }
   };
   
@@ -98,42 +111,116 @@ const Reports: React.FC = () => {
     }
   };
   
-  // Simulate sending SMS
+  // Simulate sending SMS with detailed performance data
   const sendSMS = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    toast.info(`Sending report to ${student.guardianName} at ${student.guardianPhone}...`);
+    // Get performance data for the SMS
+    const performanceSummary = getStudentPerformanceSummary(studentId);
+    const positionInfo = getStudentPositionInfo(studentId);
+    const studentName = `${student.firstName} ${student.lastName}`;
     
-    // Simulate API call
+    // Create a more detailed SMS message
+    const smsMessage = 
+      `Academic Report - ${studentName}: Average score: ${performanceSummary.averageScore}%, 
+      Grade: ${performanceSummary.grade}, 
+      Class Position: ${positionInfo}, 
+      Term ${selectedTerm}, ${selectedYear}`;
+    
+    toast.info(`Sending report to ${student.guardianName} at ${student.guardianPhone}...`);
+    console.log("SMS message content:", smsMessage);
+    
+    // Simulate API call for SMS
     setTimeout(() => {
-      toast.success(`Report sent to ${student.guardianName} successfully!`);
+      toast.success(`Report summary sent to ${student.guardianName} successfully!`);
     }, 2000);
   };
 
-  // Share report via WhatsApp - UPDATED to fix the message direction
-  const shareViaWhatsApp = (studentId: string) => {
+  // Share report via WhatsApp with PDF attachment instructions
+  const shareViaWhatsApp = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    const studentName = `${student.firstName} ${student.lastName}`;
+    // Generate PDF first
+    const pdfUrl = await generateStudentPDF(true);
+    if (!pdfUrl) {
+      toast.error("Failed to generate PDF for sharing");
+      return;
+    }
     
-    // Create message as if coming from the school/teacher
+    const studentName = `${student.firstName} ${student.lastName}`;
+    const performanceSummary = getStudentPerformanceSummary(studentId);
+    
+    // Create message with instructions to attach the downloaded PDF
     const message = encodeURIComponent(
-      `Hello ${student.guardianName}, this is an update from the school regarding ${studentName}'s academic report card for ${selectedYear} Term ${selectedTerm}. The report shows ${getStudentPerformanceSummary(studentId)}. Please contact the school if you need further clarification.`
+      `Hello ${student.guardianName}, this is an update from the school regarding ${studentName}'s academic report card for ${selectedYear} Term ${selectedTerm}. The report shows ${performanceSummary.summary}. Average: ${performanceSummary.averageScore}%, Position: ${getStudentPositionInfo(studentId)}. I've prepared a PDF report that I'll share with you separately.`
     );
     
     // Open WhatsApp with pre-filled message to send TO the guardian
     const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
     window.open(whatsappURL, '_blank');
     
-    toast.success(`Opening WhatsApp to send message to ${student.guardianName}`);
+    toast.success(`Opening WhatsApp to send message to ${student.guardianName}. Please share the downloaded PDF separately.`);
+  };
+  
+  // Helper function to get student position info
+  const getStudentPositionInfo = (studentId: string): string => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return "N/A";
+    
+    // Get all students in the same form
+    const classmates = students.filter(s => s.form === student.form);
+    
+    // Calculate average for each student
+    const studentAverages = classmates.map(s => {
+      const studentSubjectAverages: Record<string, number> = {};
+      
+      subjects.forEach(subject => {
+        const subjectMarks = marks.filter(
+          m => m.studentId === s.id && 
+          m.subjectId === subject.id &&
+          exams.some(e => 
+            e.id === m.examId && 
+            e.year === parseInt(selectedYear) && 
+            e.term === parseInt(selectedTerm) as 1 | 2
+          )
+        );
+        
+        if (subjectMarks.length > 0) {
+          const total = subjectMarks.reduce((sum, m) => sum + m.score, 0);
+          studentSubjectAverages[subject.id] = Math.round(total / subjectMarks.length);
+        }
+      });
+      
+      const subjectValues = Object.values(studentSubjectAverages);
+      const average = subjectValues.length > 0
+        ? subjectValues.reduce((sum, avg) => sum + avg, 0) / subjectValues.length
+        : 0;
+      
+      return {
+        studentId: s.id,
+        average,
+      };
+    });
+    
+    // Sort by average score (descending)
+    studentAverages.sort((a, b) => b.average - a.average);
+    
+    // Find position of current student
+    const position = studentAverages.findIndex(item => item.studentId === studentId) + 1;
+    
+    return `${position} out of ${classmates.length}`;
   };
   
   // Helper function to generate a summary of student performance
   const getStudentPerformanceSummary = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
-    if (!student) return "performance information not available";
+    if (!student) return { 
+      summary: "performance information not available",
+      averageScore: 0,
+      grade: "N/A" 
+    };
     
     // Find relevant exams
     const relevantExams = exams.filter(
@@ -150,26 +237,56 @@ const Reports: React.FC = () => {
     
     // Calculate average score
     if (studentMarks.length === 0) {
-      return "no recorded marks for this term";
+      return { 
+        summary: "no recorded marks for this term",
+        averageScore: 0,
+        grade: "N/A" 
+      };
     }
     
     const totalScore = studentMarks.reduce((sum, mark) => sum + mark.score, 0);
     const averageScore = Math.round(totalScore / studentMarks.length);
     
+    // Get grade
+    const grade = getGradeFromScore(averageScore);
+    
     // Return appropriate message based on performance
+    let summary = "";
     if (averageScore >= 80) {
-      return `outstanding performance with an average of ${averageScore}%`;
+      summary = `outstanding performance with an average of ${averageScore}%`;
     } else if (averageScore >= 70) {
-      return `excellent performance with an average of ${averageScore}%`;
+      summary = `excellent performance with an average of ${averageScore}%`;
     } else if (averageScore >= 60) {
-      return `very good performance with an average of ${averageScore}%`;
+      summary = `very good performance with an average of ${averageScore}%`;
     } else if (averageScore >= 50) {
-      return `good performance with an average of ${averageScore}%`;
+      summary = `good performance with an average of ${averageScore}%`;
     } else if (averageScore >= 40) {
-      return `fair performance with an average of ${averageScore}%`;
+      summary = `fair performance with an average of ${averageScore}%`;
     } else {
-      return `performance that needs improvement, with an average of ${averageScore}%`;
+      summary = `performance that needs improvement, with an average of ${averageScore}%`;
     }
+    
+    return {
+      summary,
+      averageScore,
+      grade
+    };
+  };
+  
+  // Helper function to get grade from score
+  const getGradeFromScore = (score: number): string => {
+    if (score >= 80) return "A";
+    if (score >= 75) return "A-";
+    if (score >= 70) return "B+";
+    if (score >= 65) return "B";
+    if (score >= 60) return "B-";
+    if (score >= 55) return "C+";
+    if (score >= 50) return "C";
+    if (score >= 45) return "C-";
+    if (score >= 40) return "D+";
+    if (score >= 35) return "D";
+    if (score >= 30) return "D-";
+    return "E";
   };
   
   return (
@@ -251,7 +368,7 @@ const Reports: React.FC = () => {
               
               {selectedStudent && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  <Button onClick={generateStudentPDF}>
+                  <Button onClick={() => generateStudentPDF()}>
                     <FileText className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
@@ -270,6 +387,31 @@ const Reports: React.FC = () => {
                     <Share className="mr-2 h-4 w-4" />
                     Share via WhatsApp
                   </Button>
+                </div>
+              )}
+              
+              {generatedPdfUrl && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">PDF ready for sharing:</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        if (generatedPdfUrl) {
+                          window.open(generatedPdfUrl, '_blank');
+                        }
+                      }}
+                    >
+                      Open PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setGeneratedPdfUrl(null)}
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
