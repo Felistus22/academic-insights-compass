@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
-import { FilePdf, MessageSquare, Send, Share, WhatsApp } from "lucide-react";
+import { FileText, MessageSquare, Send, Phone } from "lucide-react";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -208,7 +208,7 @@ const Reports: React.FC = () => {
               {selectedStudent && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button onClick={generateStudentPDF}>
-                    <FilePdf className="mr-2 h-4 w-4" />
+                    <FileText className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
                   <Button 
@@ -223,7 +223,7 @@ const Reports: React.FC = () => {
                     onClick={() => shareViaWhatsApp(selectedStudent)}
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
-                    <WhatsApp className="mr-2 h-4 w-4" />
+                    <Phone className="mr-2 h-4 w-4" />
                     Share via WhatsApp
                   </Button>
                 </div>
@@ -303,7 +303,7 @@ const Reports: React.FC = () => {
               
               <div className="flex flex-wrap gap-2 mt-4">
                 <Button onClick={generateFormPDF}>
-                  <FilePdf className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   Download PDF
                 </Button>
               </div>
