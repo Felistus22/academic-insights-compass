@@ -49,13 +49,24 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
   });
 
   const onSubmit = (data: StudentFormValues) => {
+    // Fix: Ensure all required fields are present by creating a properly typed object
+    const studentData: Omit<Student, "id"> = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      admissionNumber: data.admissionNumber,
+      form: data.form,
+      guardianName: data.guardianName,
+      guardianPhone: data.guardianPhone,
+      imageUrl: data.imageUrl || "/placeholder.svg"
+    };
+
     if (isEditing && student) {
       updateStudent({
         ...student,
         ...data
       });
     } else {
-      addStudent(data);
+      addStudent(studentData);
     }
     onSuccess();
   };

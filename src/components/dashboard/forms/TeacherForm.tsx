@@ -53,16 +53,21 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
   });
 
   const onSubmit = (data: TeacherFormValues) => {
-    // Include the selected subjects
-    const teacherData = {
-      ...data,
-      subjectIds: selectedSubjects,
+    // Fix: Create a properly typed teacher object with all required fields
+    const teacherData: Omit<Teacher, "id"> = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: data.password,
+      role: data.role,
+      subjectIds: selectedSubjects
     };
     
     if (isEditing && teacher) {
       updateTeacher({
         ...teacher,
-        ...teacherData
+        ...data,
+        subjectIds: selectedSubjects
       });
     } else {
       addTeacher(teacherData);
