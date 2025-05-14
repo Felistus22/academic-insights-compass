@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MessageSquare, Send, Phone } from "lucide-react";
+import { FileText, MessageSquare, Share, Phone } from "lucide-react";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -111,21 +111,65 @@ const Reports: React.FC = () => {
     }, 2000);
   };
 
-  // Share report via WhatsApp
+  // Share report via WhatsApp - UPDATED to fix the message direction
   const shareViaWhatsApp = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
     const studentName = `${student.firstName} ${student.lastName}`;
+    
+    // Create message as if coming from the school/teacher
     const message = encodeURIComponent(
-      `Dear ${student.guardianName}, here is the academic report card for ${studentName} for ${selectedYear} Term ${selectedTerm}. Please review it at your earliest convenience.`
+      `Hello ${student.guardianName}, this is an update from the school regarding ${studentName}'s academic report card for ${selectedYear} Term ${selectedTerm}. The report shows ${getStudentPerformanceSummary(studentId)}. Please contact the school if you need further clarification.`
     );
     
-    // Open WhatsApp with pre-filled message
-    const whatsappURL = `https://wa.me/${student.guardianPhone.replace(/\D/g, '')}?text=${message}`;
+    // Open WhatsApp with pre-filled message to send TO the guardian
+    const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
     window.open(whatsappURL, '_blank');
     
-    toast.success(`Opening WhatsApp to share report with ${student.guardianName}`);
+    toast.success(`Opening WhatsApp to send message to ${student.guardianName}`);
+  };
+  
+  // Helper function to generate a summary of student performance
+  const getStudentPerformanceSummary = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return "performance information not available";
+    
+    // Find relevant exams
+    const relevantExams = exams.filter(
+      e => e.year === parseInt(selectedYear) && 
+           e.term === parseInt(selectedTerm) as 1 | 2 && 
+           e.form === student.form
+    );
+    
+    // Find student marks for these exams
+    const studentMarks = marks.filter(
+      m => m.studentId === studentId && 
+      relevantExams.some(e => e.id === m.examId)
+    );
+    
+    // Calculate average score
+    if (studentMarks.length === 0) {
+      return "no recorded marks for this term";
+    }
+    
+    const totalScore = studentMarks.reduce((sum, mark) => sum + mark.score, 0);
+    const averageScore = Math.round(totalScore / studentMarks.length);
+    
+    // Return appropriate message based on performance
+    if (averageScore >= 80) {
+      return `outstanding performance with an average of ${averageScore}%`;
+    } else if (averageScore >= 70) {
+      return `excellent performance with an average of ${averageScore}%`;
+    } else if (averageScore >= 60) {
+      return `very good performance with an average of ${averageScore}%`;
+    } else if (averageScore >= 50) {
+      return `good performance with an average of ${averageScore}%`;
+    } else if (averageScore >= 40) {
+      return `fair performance with an average of ${averageScore}%`;
+    } else {
+      return `performance that needs improvement, with an average of ${averageScore}%`;
+    }
   };
   
   return (
@@ -223,7 +267,7 @@ const Reports: React.FC = () => {
                     onClick={() => shareViaWhatsApp(selectedStudent)}
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
-                    <Phone className="mr-2 h-4 w-4" />
+                    <Share className="mr-2 h-4 w-4" />
                     Share via WhatsApp
                   </Button>
                 </div>
