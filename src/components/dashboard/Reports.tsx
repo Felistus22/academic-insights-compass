@@ -9,13 +9,13 @@ import { Label } from "@/components/ui/label";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MessageSquare, Share, Phone, Mail, Download, CheckSquare } from "lucide-react";
+import { FileText, MessageSquare, Share, Phone, Mail, Download, CheckSquare, WhatsApp } from "lucide-react";
+import { generatePdfFromElement } from "@/lib/utils";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -28,6 +28,7 @@ const Reports: React.FC = () => {
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [batchProcessing, setBatchProcessing] = useState<boolean>(false);
+  const [processingProgress, setProcessingProgress] = useState<string>("");
   
   // Available years, terms and exam types
   const availableYears = Array.from(new Set(exams.map(exam => exam.year))).sort();
@@ -41,24 +42,7 @@ const Reports: React.FC = () => {
     toast.info("Generating PDF...");
     
     try {
-      const canvas = await html2canvas(reportElement, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-      });
-      
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-      
-      pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      const pdf = await generatePdfFromElement(reportElement);
       
       if (forSharing) {
         // Return blob URL for sharing
@@ -95,52 +79,83 @@ const Reports: React.FC = () => {
     try {
       // Create a combined PDF for all selected students
       const pdf = new jsPDF("p", "mm", "a4");
+      let isFirstPage = true;
       
       for (let i = 0; i < selectedStudents.length; i++) {
         const studentId = selectedStudents[i];
+        setProcessingProgress(`Processing ${i + 1}/${selectedStudents.length} reports...`);
+        
+        // We need to ensure the report element is visible for html2canvas
         const reportElement = document.getElementById(`student-report-${studentId}`);
         
         if (reportElement) {
-          if (i > 0) {
-            pdf.addPage();
+          // Add a slight delay to ensure elements are fully rendered
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          try {
+            // Generate PDF page for this student
+            const studentPdf = await generatePdfFromElement(reportElement);
+            
+            if (!isFirstPage) {
+              pdf.addPage();
+            } else {
+              isFirstPage = false;
+            }
+            
+            // Import the first page from student PDF to the combined PDF
+            const studentPdfData = studentPdf.output('arraybuffer');
+            const pageData = new Uint8Array(studentPdfData);
+            
+            pdf.setPage(i + 1);
+            
+            // Instead of using the raw image, we'll transfer PDF content
+            const imgData = await new Promise<string>(resolve => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg'));
+              };
+              img.src = studentPdf.output('datauristring');
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            // Add image with safe dimensions
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            
+            toast.success(`Processed ${i + 1}/${selectedStudents.length} reports`);
+          } catch (err) {
+            console.error(`Error processing student ${studentId}:`, err);
+            toast.error(`Skipping student report (error processing)`);
+            // Continue with next student if one fails
           }
-          
-          const canvas = await html2canvas(reportElement, {
-            scale: 2,
-            logging: false,
-            useCORS: true,
-          });
-          
-          const imgData = canvas.toDataURL("image/jpeg", 1.0);
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-          const imgX = (pdfWidth - imgWidth * ratio) / 2;
-          const imgY = 0;
-          
-          pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-          
-          toast.success(`Processed ${i + 1}/${selectedStudents.length} reports`);
         }
       }
       
       // Save the combined PDF
-      pdf.save(`Class_${selectedForm}_Term${selectedTerm}_${selectedYear}_Reports.pdf`);
-      toast.success("Batch PDFs generated successfully!");
-      
-      // Create a blob URL for sharing
-      const pdfBlob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      setGeneratedPdfUrl(blobUrl);
+      if (!isFirstPage) { // At least one page was added successfully
+        pdf.save(`Class_${selectedForm}_Term${selectedTerm}_${selectedYear}_Reports.pdf`);
+        toast.success("Batch PDFs generated successfully!");
+        
+        // Create a blob URL for sharing
+        const pdfBlob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        setGeneratedPdfUrl(blobUrl);
+      } else {
+        toast.error("Failed to generate any valid reports");
+      }
       
     } catch (error) {
       console.error("Error generating batch PDFs:", error);
       toast.error("Failed to generate batch PDFs");
     } finally {
       setBatchProcessing(false);
+      setProcessingProgress("");
     }
   };
   
@@ -152,24 +167,7 @@ const Reports: React.FC = () => {
     toast.info("Generating PDF...");
     
     try {
-      const canvas = await html2canvas(reportElement, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-      });
-      
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-      
-      pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      const pdf = await generatePdfFromElement(reportElement);
       pdf.save("form-report.pdf");
       
       toast.success("PDF generated successfully!");
@@ -278,65 +276,33 @@ const Reports: React.FC = () => {
       return;
     }
     
-    // First, generate the combined PDF
-    setBatchProcessing(true);
-    toast.info(`Preparing batch reports for WhatsApp...`);
-    
-    try {
-      // Create a combined PDF for all selected students
-      const pdf = new jsPDF("p", "mm", "a4");
+    // First, ensure we have a combined PDF
+    if (!generatedPdfUrl) {
+      toast.info("Generating PDF for batch sharing...");
+      await generateBatchPDFs();
       
-      for (let i = 0; i < selectedStudents.length; i++) {
-        const studentId = selectedStudents[i];
-        const reportElement = document.getElementById(`student-report-${studentId}`);
-        
-        if (reportElement) {
-          if (i > 0) {
-            pdf.addPage();
-          }
-          
-          const canvas = await html2canvas(reportElement, {
-            scale: 2,
-            logging: false,
-            useCORS: true,
-          });
-          
-          const imgData = canvas.toDataURL("image/jpeg", 1.0);
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-          const imgX = (pdfWidth - imgWidth * ratio) / 2;
-          const imgY = 0;
-          
-          pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-        }
+      // Wait a moment to ensure PDF is generated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (!generatedPdfUrl) {
+        toast.error("Failed to generate batch PDF. Please try again.");
+        return;
       }
-      
-      // Create a blob URL
-      const pdfBlob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      setGeneratedPdfUrl(blobUrl);
-      
-      // Create a general message for all guardians
-      const message = encodeURIComponent(
-        `Hello Parents/Guardians, I'm sharing the academic reports for Form ${selectedForm}, Term ${selectedTerm}, ${selectedYear}. Please find the PDF report attached separately.`
-      );
-      
-      // Create WhatsApp group message (since individual sharing would be tiresome)
-      // This opens WhatsApp with pre-filled message to send to a new chat/group
-      const whatsappURL = `https://api.whatsapp.com/send?text=${message}`;
-      window.open(whatsappURL, '_blank');
-      
-      toast.success(`Batch reports ready for WhatsApp. Please share the generated PDF with the group.`);
-    } catch (error) {
-      console.error("Error preparing batch reports:", error);
-      toast.error("Failed to prepare batch reports");
-    } finally {
-      setBatchProcessing(false);
     }
+    
+    // Create a general message for all guardians
+    const message = encodeURIComponent(
+      `Hello Parents/Guardians, I'm sharing the academic reports for Form ${selectedForm}, Term ${selectedTerm}, ${selectedYear}. Please find the PDF report attached separately.`
+    );
+    
+    // Open the PDF in a new tab so the user can download it
+    window.open(generatedPdfUrl, '_blank');
+    
+    // Create WhatsApp group message
+    const whatsappURL = `https://api.whatsapp.com/send?text=${message}`;
+    window.open(whatsappURL, '_blank');
+    
+    toast.success("Please download the PDF from the new tab and attach it to your WhatsApp message.");
   };
   
   // Helper function to get student position info
@@ -595,7 +561,7 @@ const Reports: React.FC = () => {
                     onClick={() => shareViaWhatsApp(selectedStudent)}
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
-                    <Share className="mr-2 h-4 w-4" />
+                    <WhatsApp className="mr-2 h-4 w-4" />
                     Share via WhatsApp
                   </Button>
                 </div>
@@ -752,14 +718,16 @@ const Reports: React.FC = () => {
                   disabled={selectedStudents.length === 0 || batchProcessing}
                   onClick={shareBatchViaWhatsApp}
                 >
-                  <Share className="mr-2 h-4 w-4" />
+                  <WhatsApp className="mr-2 h-4 w-4" />
                   Share Batch via WhatsApp
                 </Button>
               </div>
               
               {batchProcessing && (
                 <div className="mt-4">
-                  <p className="text-sm text-amber-500">Processing reports, please wait...</p>
+                  <p className="text-sm text-amber-500">
+                    {processingProgress || "Processing reports, please wait..."}
+                  </p>
                 </div>
               )}
               
