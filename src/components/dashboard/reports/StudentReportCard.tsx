@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +9,12 @@ interface StudentReportCardProps {
   studentId: string;
   year: number;
   term: 1 | 2;
-  containerId?: string; // Added prop for custom container ID
 }
 
 const StudentReportCard: React.FC<StudentReportCardProps> = ({
   studentId,
   year,
   term,
-  containerId = "student-report", // Default ID for backward compatibility
 }) => {
   const { students, subjects, exams, marks } = useAppContext();
 
@@ -172,7 +171,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
   }
 
   return (
-    <Card id={containerId} className="print:shadow-none">
+    <Card id="student-report" className="print:shadow-none">
       <CardHeader className="text-center border-b pb-4">
         <div className="flex justify-center mb-2">
           <div className="h-20 w-20 rounded-full bg-education-primary flex items-center justify-center">
