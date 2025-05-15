@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MessageSquare, Share, Phone, Mail, Download, CheckSquare, WhatsApp } from "lucide-react";
+import { FileText, MessageSquare, Share, Phone, Mail, Download, CheckSquare, MessageCircle } from "lucide-react";
 import { generatePdfFromElement } from "@/lib/utils";
 
 const Reports: React.FC = () => {
@@ -561,7 +561,7 @@ const Reports: React.FC = () => {
                     onClick={() => shareViaWhatsApp(selectedStudent)}
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
-                    <WhatsApp className="mr-2 h-4 w-4" />
+                    <MessageCircle className="mr-2 h-4 w-4" />
                     Share via WhatsApp
                   </Button>
                 </div>
@@ -718,7 +718,7 @@ const Reports: React.FC = () => {
                   disabled={selectedStudents.length === 0 || batchProcessing}
                   onClick={shareBatchViaWhatsApp}
                 >
-                  <WhatsApp className="mr-2 h-4 w-4" />
+                  <MessageCircle className="mr-2 h-4 w-4" />
                   Share Batch via WhatsApp
                 </Button>
               </div>
