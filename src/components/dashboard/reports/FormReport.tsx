@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,17 @@ const calculateDivision = (totalPoints: number): string => {
   } else {
     return 'ABS';
   }
+};
+
+// Helper function to calculate GPA from points
+const calculateGPA = (points: number): number => {
+  // GPA is inversely related to points (lower points = higher GPA)
+  // Using a 4.0 scale where A=4.0, F=0.0
+  if (points === 1) return 4.0;     // A
+  if (points === 2) return 3.0;     // B
+  if (points === 3) return 2.0;     // C
+  if (points === 4) return 1.0;     // D
+  return 0.0;                       // F
 };
 
 const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
@@ -142,6 +154,83 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
     
     return averages;
   }, [subjects, formMarks]);
+
+  // Calculate detailed subject performance summary with grade distributions
+  const subjectPerformanceSummary = useMemo(() => {
+    const summary: Record<string, {
+      id: string;
+      name: string;
+      code: string;
+      totalStudents: number;
+      average: number;
+      gradeDistribution: {
+        A: number;
+        B: number;
+        C: number;
+        D: number;
+        F: number;
+      };
+      absent: number;
+      gpa: number;
+    }> = {};
+    
+    subjects.forEach(subject => {
+      // Get all marks for this subject
+      const subjectMarks = formMarks.filter(m => m.subjectId === subject.id);
+      
+      // Initialize grade distribution
+      const gradeDistribution = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+      let totalScore = 0;
+      let totalPoints = 0;
+      
+      // Count students with marks for this subject
+      const studentsWithMarks = new Set(subjectMarks.map(m => m.studentId));
+      
+      // Calculate students absent for this subject
+      const absent = formStudents.length - studentsWithMarks.size;
+      
+      // Count grade distribution
+      subjectMarks.forEach(mark => {
+        const { grade, points } = calculateGradeInfo(mark.score);
+        
+        // Increment the corresponding grade count
+        if (grade === 'A') gradeDistribution.A++;
+        else if (grade === 'B') gradeDistribution.B++;
+        else if (grade === 'C') gradeDistribution.C++;
+        else if (grade === 'D') gradeDistribution.D++;
+        else gradeDistribution.F++;
+        
+        totalScore += mark.score;
+        totalPoints += points;
+      });
+      
+      // Calculate average and GPA
+      const average = subjectMarks.length > 0 ? Math.round((totalScore / subjectMarks.length) * 100) / 100 : 0;
+      const gpa = subjectMarks.length > 0 ? Math.round((calculateGPA(totalPoints / subjectMarks.length) * 100)) / 100 : 0;
+      
+      summary[subject.id] = {
+        id: subject.id,
+        name: subject.name,
+        code: subject.code,
+        totalStudents: studentsWithMarks.size,
+        average,
+        gradeDistribution,
+        absent,
+        gpa
+      };
+    });
+    
+    return summary;
+  }, [subjects, formMarks, formStudents]);
+  
+  // Calculate overall form GPA
+  const overallFormGPA = useMemo(() => {
+    const validSubjects = Object.values(subjectPerformanceSummary).filter(s => s.totalStudents > 0);
+    if (validSubjects.length === 0) return 0;
+    
+    const totalGPA = validSubjects.reduce((sum, subject) => sum + subject.gpa, 0);
+    return Math.round((totalGPA / validSubjects.length) * 100) / 100;
+  }, [subjectPerformanceSummary]);
 
   // Sort students by average for rankings
   const rankedStudents = useMemo(() => {
@@ -411,6 +500,125 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
                 : "Insufficient data to provide recommendations."}
             </div>
           </div>
+        </div>
+
+        <Separator className="my-6" />
+
+        {/* Subject Performance Summary Table */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-center">SUBJECTS PERFORMANCE SUMMARY</h3>
+          <div className="border rounded-md overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-semibold">Grade</TableHead>
+                  {subjects.map(subject => (
+                    <TableHead key={subject.id} className="text-center font-semibold">{subject.name}</TableHead>
+                  ))}
+                </TableRow>
+                <TableRow>
+                  <TableHead className="font-semibold">CODE</TableHead>
+                  {subjects.map(subject => (
+                    <TableHead key={subject.id} className="text-center">{subject.code}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">A</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gradeDistribution.A || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">B</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gradeDistribution.B || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">C</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gradeDistribution.C || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">D</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gradeDistribution.D || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">F</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gradeDistribution.F || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow className="bg-muted/30">
+                  <TableCell className="font-medium">Total Students</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center font-medium">{summary?.totalStudents || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">AVERAGE</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.average.toFixed(2) || '0.00'}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">GRADES</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    const grade = summary?.average ? getGrade(summary.average) : 'N/A';
+                    return (
+                      <TableCell key={subject.id} className="text-center">{grade}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">ABS</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.absent || 0}</TableCell>
+                    );
+                  })}
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">GPA</TableCell>
+                  {subjects.map(subject => {
+                    const summary = subjectPerformanceSummary[subject.id];
+                    return (
+                      <TableCell key={subject.id} className="text-center">{summary?.gpa.toFixed(2) || '0.00'}</TableCell>
+                    );
+                  })}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-center font-semibold">Overall Form GPA: {overallFormGPA.toFixed(2)}</p>
         </div>
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
