@@ -15,8 +15,13 @@ const DashboardContent = () => {
   const { currentTeacher } = useAppContext();
   const [activePage, setActivePage] = useState("dashboard");
 
-  // Redirect to login if not authenticated
+  // For debugging
+  console.log("Current teacher:", currentTeacher);
+  console.log("Active page:", activePage);
+
+  // Render login if not authenticated
   if (!currentTeacher) {
+    console.log("No current teacher, rendering Login component");
     return <Login />;
   }
 
@@ -62,6 +67,7 @@ const DashboardContent = () => {
 };
 
 const Index = () => {
+  console.log("Rendering Index component");
   return (
     <AppProvider>
       <DashboardContent />
