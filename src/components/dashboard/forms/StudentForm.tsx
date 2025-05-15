@@ -16,6 +16,10 @@ const studentSchema = z.object({
   lastName: z.string().min(2, { message: "Last name is required" }),
   admissionNumber: z.string().min(2, { message: "Admission number is required" }),
   form: z.coerce.number().min(1).max(4, { message: "Form must be between 1 and 4" }),
+  stream: z.enum(["A", "B", "C"], { 
+    required_error: "Stream is required",
+    invalid_type_error: "Stream must be either A, B, or C",
+  }),
   guardianName: z.string().min(2, { message: "Guardian name is required" }),
   guardianPhone: z.string().min(9, { message: "Valid phone number is required" }),
   imageUrl: z.string().optional(),
@@ -42,6 +46,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
       lastName: "",
       admissionNumber: "",
       form: 1,
+      stream: "A",
       guardianName: "",
       guardianPhone: "",
       imageUrl: "/placeholder.svg"
@@ -55,6 +60,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
       lastName: data.lastName,
       admissionNumber: data.admissionNumber,
       form: data.form,
+      stream: data.stream,
       guardianName: data.guardianName,
       guardianPhone: data.guardianPhone,
       imageUrl: data.imageUrl || "/placeholder.svg"
@@ -155,6 +161,27 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="stream"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stream</FormLabel>
+                    <FormControl>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        {...field}
+                      >
+                        <option value="A">Stream A</option>
+                        <option value="B">Stream B</option>
+                        <option value="C">Stream C</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="guardianName"
                 render={({ field }) => (
                   <FormItem>
@@ -166,21 +193,21 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={form.control}
-                name="guardianPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Guardian Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+2547123456789" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
+              
+            <FormField
+              control={form.control}
+              name="guardianPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Guardian Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+2547123456789" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

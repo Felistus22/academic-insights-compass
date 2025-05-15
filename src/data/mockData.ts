@@ -19,6 +19,7 @@ export const students: Student[] = [
     lastName: "Smith",
     admissionNumber: "F1-001",
     form: 1,
+    stream: "A",
     guardianName: "Mary Smith",
     guardianPhone: "+2547123456789",
     imageUrl: "/placeholder.svg"
@@ -29,6 +30,7 @@ export const students: Student[] = [
     lastName: "Johnson",
     admissionNumber: "F1-002",
     form: 1,
+    stream: "B",
     guardianName: "Robert Johnson",
     guardianPhone: "+2547123456790",
     imageUrl: "/placeholder.svg"
@@ -39,6 +41,7 @@ export const students: Student[] = [
     lastName: "Williams",
     admissionNumber: "F2-001",
     form: 2,
+    stream: "A",
     guardianName: "Patricia Williams",
     guardianPhone: "+2547123456791",
     imageUrl: "/placeholder.svg"
@@ -49,6 +52,7 @@ export const students: Student[] = [
     lastName: "Brown",
     admissionNumber: "F2-002",
     form: 2,
+    stream: "B",
     guardianName: "James Brown",
     guardianPhone: "+2547123456792",
     imageUrl: "/placeholder.svg"
@@ -59,6 +63,7 @@ export const students: Student[] = [
     lastName: "Miller",
     admissionNumber: "F3-001",
     form: 3,
+    stream: "A",
     guardianName: "Linda Miller",
     guardianPhone: "+2547123456793",
     imageUrl: "/placeholder.svg"
@@ -69,6 +74,7 @@ export const students: Student[] = [
     lastName: "Davis",
     admissionNumber: "F3-002",
     form: 3,
+    stream: "C",
     guardianName: "Richard Davis",
     guardianPhone: "+2547123456794",
     imageUrl: "/placeholder.svg"
@@ -79,6 +85,7 @@ export const students: Student[] = [
     lastName: "Wilson",
     admissionNumber: "F4-001",
     form: 4,
+    stream: "A",
     guardianName: "Susan Wilson",
     guardianPhone: "+2547123456795",
     imageUrl: "/placeholder.svg"
@@ -89,6 +96,7 @@ export const students: Student[] = [
     lastName: "Taylor",
     admissionNumber: "F4-002",
     form: 4,
+    stream: "B",
     guardianName: "Charles Taylor",
     guardianPhone: "+2547123456796",
     imageUrl: "/placeholder.svg"
