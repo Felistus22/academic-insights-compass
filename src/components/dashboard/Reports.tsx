@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,12 +21,18 @@ const Reports: React.FC = () => {
   
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [selectedForm, setSelectedForm] = useState<string>("1");
+  const [selectedStream, setSelectedStream] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<string>("2023");
   const [selectedTerm, setSelectedTerm] = useState<string>("1");
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   
   // Available years and terms
   const availableYears = Array.from(new Set(exams.map(exam => exam.year))).sort();
+  
+  // Filter students by stream if needed
+  const filteredStudents = selectedStream === "all"
+    ? students
+    : students.filter(s => s.stream === selectedStream);
   
   // Generate PDF for student report
   const generateStudentPDF = async (forSharing: boolean = false) => {
@@ -310,8 +315,8 @@ const Reports: React.FC = () => {
               <CardTitle>Select Student</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="student">Student</Label>
                   <Select
                     value={selectedStudent}
@@ -321,11 +326,29 @@ const Reports: React.FC = () => {
                       <SelectValue placeholder="Select Student" />
                     </SelectTrigger>
                     <SelectContent>
-                      {students.map((student) => (
+                      {filteredStudents.map((student) => (
                         <SelectItem key={student.id} value={student.id}>
-                          {student.firstName} {student.lastName} - Form {student.form}
+                          {student.firstName} {student.lastName} - Form {student.form}{student.stream ? ` ${student.stream}` : ''}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="stream">Stream</Label>
+                  <Select
+                    value={selectedStream}
+                    onValueChange={setSelectedStream}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Streams</SelectItem>
+                      <SelectItem value="A">Stream A</SelectItem>
+                      <SelectItem value="B">Stream B</SelectItem>
+                      <SelectItem value="C">Stream C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -432,7 +455,7 @@ const Reports: React.FC = () => {
               <CardTitle>Select Form and Term</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="form">Form</Label>
                   <Select
@@ -447,6 +470,24 @@ const Reports: React.FC = () => {
                       <SelectItem value="2">Form 2</SelectItem>
                       <SelectItem value="3">Form 3</SelectItem>
                       <SelectItem value="4">Form 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="stream">Stream</Label>
+                  <Select
+                    value={selectedStream}
+                    onValueChange={setSelectedStream}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Streams</SelectItem>
+                      <SelectItem value="A">Stream A</SelectItem>
+                      <SelectItem value="B">Stream B</SelectItem>
+                      <SelectItem value="C">Stream C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

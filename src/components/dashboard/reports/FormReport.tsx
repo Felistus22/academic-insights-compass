@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,36 @@ interface FormReportProps {
   year: number;
   term: 1 | 2;
 }
+
+// Helper function to calculate grade, points and remarks based on score
+const calculateGradeInfo = (score: number): { grade: string; points: number; remarks: string } => {
+  if (score >= 74.5) {
+    return { grade: 'A', points: 1, remarks: 'Excellent!' };
+  } else if (score >= 64.5) {
+    return { grade: 'B', points: 2, remarks: 'Good' };
+  } else if (score >= 44.5) {
+    return { grade: 'C', points: 3, remarks: 'Fair' };
+  } else if (score >= 29.5) {
+    return { grade: 'D', points: 4, remarks: 'Needs Improvement' };
+  } else {
+    return { grade: 'F', points: 5, remarks: 'Failed' };
+  }
+};
+
+// Helper function to calculate division based on total points
+const calculateDivision = (totalPoints: number): string => {
+  if (totalPoints >= 7 && totalPoints < 18) {
+    return 'I';
+  } else if (totalPoints >= 18 && totalPoints < 22) {
+    return 'II';
+  } else if (totalPoints >= 22 && totalPoints < 26) {
+    return 'III';
+  } else if (totalPoints >= 26 && totalPoints <= 34) {
+    return 'IV';
+  } else {
+    return 'ABS';
+  }
+};
 
 const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -45,25 +74,54 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
     );
   }, [marks, formStudents, relevantExams]);
 
-  // Calculate student averages
-  const studentAverages = useMemo(() => {
-    const averages: Record<string, { totalScore: number; count: number; average: number }> = {};
+  // Calculate student averages and detailed performance
+  const studentPerformance = useMemo(() => {
+    const performance: Record<string, {
+      totalScore: number;
+      count: number;
+      average: number;
+      subjectScores: Record<string, number>;
+      totalPoints: number;
+      division: string;
+    }> = {};
     
     formStudents.forEach(student => {
       const studentMarks = formMarks.filter(m => m.studentId === student.id);
       
       if (studentMarks.length > 0) {
-        const totalScore = studentMarks.reduce((sum, m) => sum + m.score, 0);
-        averages[student.id] = {
+        const subjectScores: Record<string, number> = {};
+        let totalScore = 0;
+        let totalPoints = 0;
+        
+        subjects.forEach(subject => {
+          const subjectMarks = studentMarks.filter(m => m.subjectId === subject.id);
+          if (subjectMarks.length > 0) {
+            const subjectAvg = Math.round(subjectMarks.reduce((sum, m) => sum + m.score, 0) / subjectMarks.length);
+            subjectScores[subject.id] = subjectAvg;
+            totalScore += subjectAvg;
+            
+            // Calculate points for this subject
+            const { points } = calculateGradeInfo(subjectAvg);
+            totalPoints += points;
+          }
+        });
+        
+        const average = Math.round(totalScore / Object.keys(subjectScores).length);
+        const division = calculateDivision(totalPoints);
+        
+        performance[student.id] = {
           totalScore,
-          count: studentMarks.length,
-          average: Math.round(totalScore / studentMarks.length)
+          count: Object.keys(subjectScores).length,
+          average,
+          subjectScores,
+          totalPoints,
+          division
         };
       }
     });
     
-    return averages;
-  }, [formStudents, formMarks]);
+    return performance;
+  }, [formStudents, formMarks, subjects]);
 
   // Calculate subject averages
   const subjectAverages = useMemo(() => {
@@ -88,24 +146,24 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
   // Sort students by average for rankings
   const rankedStudents = useMemo(() => {
     return [...formStudents]
-      .filter(student => studentAverages[student.id])
+      .filter(student => studentPerformance[student.id])
       .sort((a, b) => {
-        const avgA = studentAverages[a.id]?.average || 0;
-        const avgB = studentAverages[b.id]?.average || 0;
+        const avgA = studentPerformance[a.id]?.average || 0;
+        const avgB = studentPerformance[b.id]?.average || 0;
         return avgB - avgA;
       });
-  }, [formStudents, studentAverages]);
+  }, [formStudents, studentPerformance]);
 
   // Calculate overall form average
   const formAverage = useMemo(() => {
-    const values = Object.values(studentAverages);
+    const values = Object.values(studentPerformance);
     if (values.length === 0) return 0;
     
     const totalScore = values.reduce((sum, value) => sum + value.totalScore, 0);
     const totalCount = values.reduce((sum, value) => sum + value.count, 0);
     
     return totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
-  }, [studentAverages]);
+  }, [studentPerformance]);
 
   // Create chart data for subject performance
   const subjectPerformanceData = useMemo(() => {
@@ -122,24 +180,13 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
   const topStudentsData = useMemo(() => {
     return rankedStudents.slice(0, 10).map(student => ({
       name: `${student.firstName} ${student.lastName}`,
-      average: studentAverages[student.id]?.average || 0
+      average: studentPerformance[student.id]?.average || 0
     }));
-  }, [rankedStudents, studentAverages]);
+  }, [rankedStudents, studentPerformance]);
 
   // Get grade for average
   const getGrade = (average: number): string => {
-    if (average >= 80) return "A";
-    if (average >= 75) return "A-";
-    if (average >= 70) return "B+";
-    if (average >= 65) return "B";
-    if (average >= 60) return "B-";
-    if (average >= 55) return "C+";
-    if (average >= 50) return "C";
-    if (average >= 45) return "C-";
-    if (average >= 40) return "D+";
-    if (average >= 35) return "D";
-    if (average >= 30) return "D-";
-    return "E";
+    return calculateGradeInfo(average).grade;
   };
 
   return (
@@ -266,30 +313,60 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
                 <TableRow>
                   <TableHead className="w-[50px]">Rank</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Stream</TableHead>
                   <TableHead>Adm No.</TableHead>
+                  {subjects.slice(0, 5).map(subject => (
+                    <TableHead key={subject.id} className="text-right">{subject.code}</TableHead>
+                  ))}
+                  <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Average</TableHead>
-                  <TableHead className="text-right">Grade</TableHead>
+                  <TableHead className="text-right">Points</TableHead>
+                  <TableHead className="text-right">Division</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rankedStudents.map((student, index) => {
-                  const average = studentAverages[student.id]?.average || 0;
+                  const performance = studentPerformance[student.id] || {
+                    average: 0,
+                    subjectScores: {},
+                    totalPoints: 0,
+                    division: 'N/A',
+                    totalScore: 0,
+                    count: 0
+                  };
+                  
                   return (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>
                         {student.firstName} {student.lastName}
                       </TableCell>
+                      <TableCell>{student.stream || 'N/A'}</TableCell>
                       <TableCell>{student.admissionNumber}</TableCell>
-                      <TableCell className="text-right">{average}%</TableCell>
-                      <TableCell className="text-right">{getGrade(average)}</TableCell>
+                      {subjects.slice(0, 5).map(subject => (
+                        <TableCell key={subject.id} className="text-right">
+                          {performance.subjectScores[subject.id] || '-'}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-medium">
+                        {performance.totalScore}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {performance.average}% ({getGrade(performance.average)})
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {performance.totalPoints}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {performance.division}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
                 
                 {rankedStudents.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
+                    <TableCell colSpan={9 + Math.min(subjects.length, 5)} className="text-center py-4">
                       No student data available
                     </TableCell>
                   </TableRow>

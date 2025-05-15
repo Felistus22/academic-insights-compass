@@ -5,6 +5,7 @@ export interface Student {
   lastName: string;
   admissionNumber: string;
   form: number;
+  stream: "A" | "B" | "C";
   guardianName: string;
   guardianPhone: string;
   imageUrl?: string;

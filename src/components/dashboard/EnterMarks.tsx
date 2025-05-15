@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,18 +18,21 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const EnterMarks: React.FC = () => {
-  const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher } = useAppContext();
+  const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher, addExam } = useAppContext();
   
   // State management
   const [selectedExam, setSelectedExam] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<number>(0);
+  const [selectedStream, setSelectedStream] = useState<string>("all");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [editingMark, setEditingMark] = useState<any | null>(null);
   const [marksToEnter, setMarksToEnter] = useState<Record<string, number>>({});
+  const [customExamYear, setCustomExamYear] = useState<string>(new Date().getFullYear().toString());
   
-  // Filter students by selected class
+  // Filter students by selected class and stream
   const filteredStudents = students.filter((student) => 
-    selectedClass === 0 || student.form === selectedClass
+    (selectedClass === 0 || student.form === selectedClass) &&
+    (selectedStream === "all" || student.stream === selectedStream)
   );
   
   // Filter exams by selected class
@@ -50,6 +52,32 @@ const EnterMarks: React.FC = () => {
         mark.subjectId === selectedSubject
       ) 
     : [];
+
+  // Handle adding a new exam with custom year
+  const handleAddCustomExam = () => {
+    // Display dialog for creating new exam
+    const examName = prompt("Enter exam name:");
+    if (!examName) return;
+    
+    const year = parseInt(customExamYear);
+    if (isNaN(year)) {
+      toast.error("Please enter a valid year");
+      return;
+    }
+    
+    const newExam = addExam({
+      name: examName,
+      type: "Custom",
+      term: 1, // Default term
+      year: year,
+      form: selectedClass,
+      date: new Date().toISOString()
+    });
+    
+    // Set the newly created exam as selected
+    setSelectedExam(newExam.id);
+    toast.success(`New exam "${examName}" created successfully!`);
+  };
   
   const handleSubmitMarks = () => {
     if (!selectedExam || !selectedSubject) {
@@ -193,7 +221,7 @@ const EnterMarks: React.FC = () => {
               <CardTitle>Select Criteria</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="class">Form/Class</Label>
                   <Select
@@ -209,6 +237,24 @@ const EnterMarks: React.FC = () => {
                       <SelectItem value="2">Form 2</SelectItem>
                       <SelectItem value="3">Form 3</SelectItem>
                       <SelectItem value="4">Form 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="stream">Stream</Label>
+                  <Select
+                    value={selectedStream}
+                    onValueChange={setSelectedStream}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Streams</SelectItem>
+                      <SelectItem value="A">Stream A</SelectItem>
+                      <SelectItem value="B">Stream B</SelectItem>
+                      <SelectItem value="C">Stream C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -234,21 +280,40 @@ const EnterMarks: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="exam">Exam</Label>
-                  <Select 
-                    value={selectedExam} 
-                    onValueChange={setSelectedExam}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Exam" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredExams.map((exam) => (
-                        <SelectItem key={exam.id} value={exam.id}>
-                          {exam.name} ({new Date(exam.date).toLocaleDateString()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex space-x-2">
+                    <Select 
+                      value={selectedExam} 
+                      onValueChange={setSelectedExam}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select Exam" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredExams.map((exam) => (
+                          <SelectItem key={exam.id} value={exam.id}>
+                            {exam.name} ({exam.year})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleAddCustomExam}
+                    >
+                      Add Exam
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="examYear">Custom Exam Year</Label>
+                  <Input
+                    id="examYear"
+                    type="number"
+                    value={customExamYear}
+                    onChange={(e) => setCustomExamYear(e.target.value)}
+                    placeholder="Enter exam year"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -341,7 +406,7 @@ const EnterMarks: React.FC = () => {
               <CardTitle>View Recorded Marks</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="view-class">Form/Class</Label>
                   <Select
@@ -357,6 +422,24 @@ const EnterMarks: React.FC = () => {
                       <SelectItem value="2">Form 2</SelectItem>
                       <SelectItem value="3">Form 3</SelectItem>
                       <SelectItem value="4">Form 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="view-stream">Stream</Label>
+                  <Select
+                    value={selectedStream}
+                    onValueChange={setSelectedStream}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Streams</SelectItem>
+                      <SelectItem value="A">Stream A</SelectItem>
+                      <SelectItem value="B">Stream B</SelectItem>
+                      <SelectItem value="C">Stream C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -392,7 +475,7 @@ const EnterMarks: React.FC = () => {
                     <SelectContent>
                       {filteredExams.map((exam) => (
                         <SelectItem key={exam.id} value={exam.id}>
-                          {exam.name} ({new Date(exam.date).toLocaleDateString()})
+                          {exam.name} ({exam.year})
                         </SelectItem>
                       ))}
                     </SelectContent>
