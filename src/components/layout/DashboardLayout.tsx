@@ -34,22 +34,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     {
       name: "Dashboard",
       icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect width="7" height="9" x="3" y="3" rx="1" />
-          <rect width="7" height="5" x="14" y="3" rx="1" />
-          <rect width="7" height="9" x="14" y="12" rx="1" />
-          <rect width="7" height="5" x="3" y="16" rx="1" />
-        </svg>
+        <img 
+            src="/logo.png" 
+            alt="Dashboard Icon" 
+            className="w-6 h-6"
+        />
       ),
       onClick: () => onNavigate("dashboard"),
       active: activePage === "dashboard",
@@ -209,14 +198,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="p-4">
           <div className="flex items-center justify-center space-x-2">
             <div className="bg-education-primary p-2 rounded-md flex items-center justify-center">
-              {/* Replace the SVG with an img tag for your PNG */}
               <img 
-                src="/path-to-your-logo.png" 
+                src="/logo.png" 
                 alt="School Reports Logo" 
                 className="w-6 h-6"
               />
             </div>
-            <h1 className="text-xl font-bold">School Reports</h1>
+            <h1 className="text-xl font-bold">Padre Pio ReportCard System</h1>
           </div>
         </div>
 
