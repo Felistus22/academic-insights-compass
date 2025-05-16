@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Image } from "@/components/ui/image";
 
 interface SidebarItem {
   name: string;
@@ -207,21 +208,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="w-64 bg-white shadow-md">
         <div className="p-4">
           <div className="flex items-center justify-center space-x-2">
-            <div className="bg-education-primary p-2 rounded-md">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" />
-              </svg>
+            <div className="bg-education-primary p-2 rounded-md flex items-center justify-center">
+              {/* Replace the SVG with an img tag for your PNG */}
+              <img 
+                src="/path-to-your-logo.png" 
+                alt="School Reports Logo" 
+                className="w-6 h-6"
+              />
             </div>
             <h1 className="text-xl font-bold">School Reports</h1>
           </div>
