@@ -10,6 +10,7 @@ import Reports from "@/components/dashboard/Reports";
 import ActivityLogs from "@/components/dashboard/ActivityLogs";
 import ManageStudents from "@/components/dashboard/ManageStudents";
 import ManageTeachers from "@/components/dashboard/ManageTeachers";
+import ManageSubjects from "@/components/dashboard/ManageSubjects";
 
 const DashboardContent = () => {
   const { currentTeacher } = useAppContext();
@@ -45,6 +46,12 @@ const DashboardContent = () => {
       case "manageTeachers":
         return currentTeacher.role === "admin" ? (
           <ManageTeachers />
+        ) : (
+          <DashboardHome />
+        );
+      case "manageSubjects":
+        return currentTeacher.role === "admin" ? (
+          <ManageSubjects />
         ) : (
           <DashboardHome />
         );

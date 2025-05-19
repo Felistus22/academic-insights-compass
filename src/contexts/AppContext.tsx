@@ -27,6 +27,9 @@ interface AppContextType {
   addTeacher: (teacher: Omit<Teacher, "id">) => void;
   updateTeacher: (teacher: Teacher) => void;
   deleteTeacher: (teacherId: string) => void;
+  addSubject: (subject: Omit<Subject, "id">) => void;
+  updateSubject: (subject: Subject) => void;
+  deleteSubject: (subjectId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -361,6 +364,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.success("Teacher deleted successfully");
   };
 
+  // New Subject Management Functions
+  const addSubject = (subjectData: Omit<Subject, "id">) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can add subjects");
+      return;
+    }
+
+    const newSubject: Subject = {
+      id: `subj${Date.now()}`,
+      ...subjectData
+    };
+
+    setData(prevData => ({
+      ...prevData,
+      subjects: [...prevData.subjects, newSubject]
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "SUBJECT_ADD",
+      details: `Added new subject: ${subjectData.name}`
+    });
+
+    toast.success("Subject added successfully");
+  };
+
+  const updateSubject = (updatedSubject: Subject) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can update subjects");
+      return;
+    }
+
+    setData(prevData => ({
+      ...prevData,
+      subjects: prevData.subjects.map(subject => 
+        subject.id === updatedSubject.id ? updatedSubject : subject
+      )
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "SUBJECT_UPDATE",
+      details: `Updated subject: ${updatedSubject.name}`
+    });
+
+    toast.success("Subject updated successfully");
+  };
+
+  const deleteSubject = (subjectId: string) => {
+    if (!currentTeacher || currentTeacher.role !== "admin") {
+      toast.error("Only administrators can delete subjects");
+      return;
+    }
+
+    const subjectToDelete = data.subjects.find(s => s.id === subjectId);
+    if (!subjectToDelete) return;
+
+    // Check if the subject is being used in any marks
+    const isUsed = data.marks.some(mark => mark.subjectId === subjectId);
+    if (isUsed) {
+      toast.error("Cannot delete a subject that has marks associated with it");
+      return;
+    }
+
+    // Check if the subject is assigned to any teachers
+    const isAssigned = data.teachers.some(teacher => 
+      teacher.subjectIds.includes(subjectId)
+    );
+    if (isAssigned) {
+      toast.error("Cannot delete a subject that is assigned to teachers");
+      return;
+    }
+
+    setData(prevData => ({
+      ...prevData,
+      subjects: prevData.subjects.filter(subject => subject.id !== subjectId)
+    }));
+
+    addActivityLog({
+      teacherId: currentTeacher.id,
+      action: "SUBJECT_DELETE",
+      details: `Deleted subject: ${subjectToDelete.name}`
+    });
+
+    toast.success("Subject deleted successfully");
+  };
+
   const contextValue: AppContextType = {
     ...data,
     currentTeacher,
@@ -379,7 +469,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteStudent,
     addTeacher,
     updateTeacher,
-    deleteTeacher
+    deleteTeacher,
+    addSubject,
+    updateSubject,
+    deleteSubject
   };
 
   return (
