@@ -1,3 +1,4 @@
+
 import React, { ReactNode } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       name: "Dashboard",
       icon: (
         <img 
-            src="/logo.png" 
+            src="/lovable-uploads/40c13983-fd2d-4a30-b15f-2fde2ace8f2f.png" 
             alt="Dashboard Icon" 
             className="w-6 h-6"
         />
@@ -199,8 +200,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <div className="flex items-center justify-center space-x-2">
             <div className="bg-education-primary p-2 rounded-md flex items-center justify-center">
               <img 
-                src="/logo.png" 
-                alt="School Reports Logo" 
+                src="/lovable-uploads/40c13983-fd2d-4a30-b15f-2fde2ace8f2f.png" 
+                alt="School Logo" 
                 className="w-6 h-6"
               />
             </div>
