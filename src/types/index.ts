@@ -1,10 +1,9 @@
-
 export interface Student {
   id: string;
   firstName: string;
   lastName: string;
   admissionNumber: string;
-  form: number;
+  form: number; // Now can be 1-5, with 5 representing alumni
   stream: "A" | "B" | "C";
   guardianName: string;
   guardianPhone: string;

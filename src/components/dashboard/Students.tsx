@@ -5,12 +5,34 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { ChevronDown, ArrowUpSquare } from "lucide-react";
 
 const Students: React.FC = () => {
-  const { students } = useAppContext();
+  const { students, updateStudent, currentTeacher } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [sortBy, setSortBy] = useState("lastName"); // default sort by last name
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [promotionForm, setPromotionForm] = useState<number>(0);
 
+  // Filter students based on search term and form
   const filteredStudents = students
     .filter((student) => {
       const matchesSearch =
@@ -25,9 +47,85 @@ const Students: React.FC = () => {
       return matchesSearch && matchesForm;
     })
     .sort((a, b) => {
-      if (a.form !== b.form) return a.form - b.form;
-      return a.lastName.localeCompare(b.lastName);
+      // Sort by selected field
+      if (sortBy === "firstName") {
+        return a.firstName.localeCompare(b.firstName);
+      } else if (sortBy === "lastName") {
+        return a.lastName.localeCompare(b.lastName);
+      } else if (sortBy === "admissionNumber") {
+        return a.admissionNumber.localeCompare(b.admissionNumber);
+      } else {
+        // Default fallback sort (by form then last name)
+        if (a.form !== b.form) return a.form - b.form;
+        return a.lastName.localeCompare(b.lastName);
+      }
     });
+
+  // Function to handle promoting students
+  const openPromoteDialog = (form: number) => {
+    setPromotionForm(form);
+    // Pre-select all students from the current form
+    const studentsInForm = students
+      .filter(student => student.form === form)
+      .map(student => student.id);
+    setSelectedStudents(studentsInForm);
+    setIsPromoteDialogOpen(true);
+  };
+
+  const handleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId)
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const handlePromoteStudents = () => {
+    if (selectedStudents.length === 0) {
+      toast.error("No students selected");
+      return;
+    }
+
+    let promoted = 0;
+    let graduated = 0;
+    
+    selectedStudents.forEach(studentId => {
+      const student = students.find(s => s.id === studentId);
+      if (!student) return;
+      
+      if (student.form < 4) {
+        // Promote to next form
+        updateStudent({
+          ...student,
+          form: student.form + 1
+        });
+        promoted++;
+      } else if (student.form === 4) {
+        // Form 4 students are graduating
+        updateStudent({
+          ...student,
+          form: 5, // Form 5 can represent alumni in this system
+        });
+        graduated++;
+      }
+    });
+
+    setIsPromoteDialogOpen(false);
+    setSelectedStudents([]);
+    
+    if (promoted > 0 && graduated > 0) {
+      toast.success(`Promoted ${promoted} students and graduated ${graduated} students`);
+    } else if (promoted > 0) {
+      toast.success(`Successfully promoted ${promoted} students`);
+    } else if (graduated > 0) {
+      toast.success(`Successfully graduated ${graduated} students`);
+    }
+  };
+
+  // Get count of students by form
+  const getFormCount = (form: number) => {
+    return students.filter(s => s.form === form).length;
+  };
 
   return (
     <div className="space-y-6">
@@ -39,13 +137,59 @@ const Students: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-4">
           <Input
             placeholder="Search students..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
+          
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Sort By <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSortBy("firstName")}>
+                  First Name
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("lastName")}>
+                  Last Name
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("admissionNumber")}>
+                  Admission Number
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {currentTeacher?.role === "admin" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="gap-2">
+                    <ArrowUpSquare className="h-4 w-4" />
+                    Promote Students
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => openPromoteDialog(1)}>
+                    Form 1 to Form 2 ({getFormCount(1)} students)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openPromoteDialog(2)}>
+                    Form 2 to Form 3 ({getFormCount(2)} students)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openPromoteDialog(3)}>
+                    Form 3 to Form 4 ({getFormCount(3)} students)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openPromoteDialog(4)}>
+                    Form 4 to Alumni ({getFormCount(4)} students)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
@@ -55,6 +199,9 @@ const Students: React.FC = () => {
             <TabsTrigger value="form2">Form 2</TabsTrigger>
             <TabsTrigger value="form3">Form 3</TabsTrigger>
             <TabsTrigger value="form4">Form 4</TabsTrigger>
+            {currentTeacher?.role === "admin" && (
+              <TabsTrigger value="form5">Alumni</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
@@ -66,8 +213,12 @@ const Students: React.FC = () => {
                       <span>
                         {student.firstName} {student.lastName}
                       </span>
-                      <span className="text-sm bg-education-light text-education-primary px-2 py-1 rounded-full">
-                        Form {student.form}
+                      <span className={`text-sm px-2 py-1 rounded-full ${
+                        student.form === 5 
+                          ? "bg-amber-100 text-amber-800" 
+                          : "bg-education-light text-education-primary"
+                      }`}>
+                        {student.form === 5 ? "Alumni" : `Form ${student.form}`}
                       </span>
                     </CardTitle>
                   </CardHeader>
@@ -105,6 +256,69 @@ const Students: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Promotion Dialog */}
+      <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {promotionForm < 4 
+                ? `Promote Form ${promotionForm} Students to Form ${promotionForm + 1}` 
+                : "Graduate Form 4 Students to Alumni"}
+            </DialogTitle>
+            <DialogDescription>
+              Select the students you want to {promotionForm < 4 ? "promote" : "graduate"}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[300px] overflow-y-auto border rounded-md p-2">
+            {students
+              .filter(s => s.form === promotionForm)
+              .sort((a, b) => a.lastName.localeCompare(b.lastName))
+              .map(student => (
+                <div key={student.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    id={student.id}
+                    checked={selectedStudents.includes(student.id)}
+                    onChange={() => handleStudentSelection(student.id)}
+                    className="rounded border-gray-300 text-education-primary focus:ring-education-primary"
+                  />
+                  <label htmlFor={student.id} className="flex-1 cursor-pointer">
+                    {student.lastName}, {student.firstName} ({student.admissionNumber})
+                  </label>
+                </div>
+              ))}
+              
+            {students.filter(s => s.form === promotionForm).length === 0 && (
+              <p className="text-center py-4 text-gray-500">No students found in this form</p>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedStudents(students.filter(s => s.form === promotionForm).map(s => s.id))}
+            >
+              Select All
+            </Button>
+            <span className="text-sm text-gray-500">
+              {selectedStudents.filter(id => 
+                students.find(s => s.id === id)?.form === promotionForm
+              ).length} of {students.filter(s => s.form === promotionForm).length} selected
+            </span>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPromoteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePromoteStudents}>
+              {promotionForm < 4 ? "Promote Students" : "Graduate Students"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

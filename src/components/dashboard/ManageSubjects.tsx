@@ -92,7 +92,11 @@ const ManageSubjects = () => {
         ...values,
       });
     } else {
-      addSubject(values);
+      // Fix: Ensure name and code are passed as non-optional fields
+      addSubject({
+        name: values.name,
+        code: values.code,
+      });
     }
     setIsDialogOpen(false);
     form.reset();
