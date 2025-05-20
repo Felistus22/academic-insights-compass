@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 
 const EnterMarks: React.FC = () => {
   const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher, addExam } = useAppContext();
@@ -30,27 +28,12 @@ const EnterMarks: React.FC = () => {
   const [editingMark, setEditingMark] = useState<any | null>(null);
   const [marksToEnter, setMarksToEnter] = useState<Record<string, number>>({});
   const [customExamYear, setCustomExamYear] = useState<string>(new Date().getFullYear().toString());
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
   // Filter students by selected class and stream
   const filteredStudents = students.filter((student) => 
     (selectedClass === 0 || student.form === selectedClass) &&
     (selectedStream === "all" || student.stream === selectedStream)
   );
-
-  // Sort students alphabetically
-  const sortedStudents = [...filteredStudents].sort((a, b) => {
-    const aName = `${a.lastName} ${a.firstName}`.toLowerCase();
-    const bName = `${b.lastName} ${b.firstName}`.toLowerCase();
-    return sortDirection === "asc" 
-      ? aName.localeCompare(bName)
-      : bName.localeCompare(aName);
-  });
-  
-  // Toggle sort direction
-  const toggleSortDirection = () => {
-    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-  };
   
   // Filter exams by selected class
   const filteredExams = exams.filter((exam) => 
@@ -338,31 +321,13 @@ const EnterMarks: React.FC = () => {
           
           {selectedExam && selectedSubject && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle>
                   Enter Marks for {getSubjectName(selectedSubject)} - {getExamName(selectedExam)}
                 </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={toggleSortDirection}
-                  className="ml-auto flex items-center gap-2"
-                >
-                  {sortDirection === "asc" ? (
-                    <>
-                      <ArrowDownAZ className="h-4 w-4" />
-                      <span className="hidden sm:inline">Sort A-Z</span>
-                    </>
-                  ) : (
-                    <>
-                      <ArrowUpAZ className="h-4 w-4" />
-                      <span className="hidden sm:inline">Sort Z-A</span>
-                    </>
-                  )}
-                </Button>
               </CardHeader>
               <CardContent>
-                {sortedStudents.length > 0 ? (
+                {filteredStudents.length > 0 ? (
                   <div className="border rounded-md">
                     <Table>
                       <TableHeader>
@@ -374,7 +339,7 @@ const EnterMarks: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sortedStudents.map((student) => {
+                        {filteredStudents.map((student) => {
                           // Check if a mark already exists
                           const existingMark = existingMarks.find(
                             (m) => m.studentId === student.id
@@ -383,12 +348,10 @@ const EnterMarks: React.FC = () => {
                           return (
                             <TableRow key={student.id}>
                               <TableCell>
-                                {student.lastName}, {student.firstName}
+                                {student.firstName} {student.lastName}
                               </TableCell>
                               <TableCell>{student.admissionNumber}</TableCell>
-                              <TableCell>
-                                Form {student.form === 5 ? "Alumni" : student.form}
-                              </TableCell>
+                              <TableCell>Form {student.form}</TableCell>
                               <TableCell className="text-right">
                                 <Input
                                   type="number"
@@ -439,26 +402,8 @@ const EnterMarks: React.FC = () => {
         
         <TabsContent value="view" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle>View Recorded Marks</CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={toggleSortDirection}
-                className="ml-auto flex items-center gap-2"
-              >
-                {sortDirection === "asc" ? (
-                  <>
-                    <ArrowDownAZ className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sort A-Z</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowUpAZ className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sort Z-A</span>
-                  </>
-                )}
-              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -559,7 +504,7 @@ const EnterMarks: React.FC = () => {
                           return (
                             <TableRow key={mark.id}>
                               <TableCell>
-                                {student.lastName}, {student.firstName}
+                                {student.firstName} {student.lastName}
                               </TableCell>
                               <TableCell>{student.admissionNumber}</TableCell>
                               <TableCell>{mark.score}</TableCell>
