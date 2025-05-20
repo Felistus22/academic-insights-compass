@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ArrowUpDown } from "lucide-react";
 
 const EnterMarks: React.FC = () => {
   const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher, addExam } = useAppContext();
@@ -28,12 +30,19 @@ const EnterMarks: React.FC = () => {
   const [editingMark, setEditingMark] = useState<any | null>(null);
   const [marksToEnter, setMarksToEnter] = useState<Record<string, number>>({});
   const [customExamYear, setCustomExamYear] = useState<string>(new Date().getFullYear().toString());
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
   // Filter students by selected class and stream
-  const filteredStudents = students.filter((student) => 
-    (selectedClass === 0 || student.form === selectedClass) &&
-    (selectedStream === "all" || student.stream === selectedStream)
-  );
+  const filteredStudents = students
+    .filter((student) => 
+      (selectedClass === 0 || student.form === selectedClass) &&
+      (selectedStream === "all" || student.stream === selectedStream)
+    )
+    .sort((a, b) => {
+      // Sort by last name by default
+      const comparison = a.lastName.localeCompare(b.lastName);
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
   
   // Filter exams by selected class
   const filteredExams = exams.filter((exam) => 
@@ -52,6 +61,11 @@ const EnterMarks: React.FC = () => {
         mark.subjectId === selectedSubject
       ) 
     : [];
+    
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+  };
 
   // Handle adding a new exam with custom year
   const handleAddCustomExam = () => {
@@ -321,10 +335,19 @@ const EnterMarks: React.FC = () => {
           
           {selectedExam && selectedSubject && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>
                   Enter Marks for {getSubjectName(selectedSubject)} - {getExamName(selectedExam)}
                 </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleSortDirection}
+                  className="ml-auto"
+                >
+                  <ArrowUpDown className="h-4 w-4 mr-1" />
+                  Sort {sortDirection === "asc" ? "A-Z" : "Z-A"}
+                </Button>
               </CardHeader>
               <CardContent>
                 {filteredStudents.length > 0 ? (
@@ -348,7 +371,7 @@ const EnterMarks: React.FC = () => {
                           return (
                             <TableRow key={student.id}>
                               <TableCell>
-                                {student.firstName} {student.lastName}
+                                {student.lastName}, {student.firstName}
                               </TableCell>
                               <TableCell>{student.admissionNumber}</TableCell>
                               <TableCell>Form {student.form}</TableCell>

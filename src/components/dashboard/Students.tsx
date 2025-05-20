@@ -28,6 +28,7 @@ const Students: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState("lastName"); // default sort by last name
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); // default ascending
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [promotionForm, setPromotionForm] = useState<number>(0);
@@ -48,18 +49,28 @@ const Students: React.FC = () => {
     })
     .sort((a, b) => {
       // Sort by selected field
+      let comparison = 0;
+      
       if (sortBy === "firstName") {
-        return a.firstName.localeCompare(b.firstName);
+        comparison = a.firstName.localeCompare(b.firstName);
       } else if (sortBy === "lastName") {
-        return a.lastName.localeCompare(b.lastName);
+        comparison = a.lastName.localeCompare(b.lastName);
       } else if (sortBy === "admissionNumber") {
-        return a.admissionNumber.localeCompare(b.admissionNumber);
+        comparison = a.admissionNumber.localeCompare(b.admissionNumber);
       } else {
         // Default fallback sort (by form then last name)
         if (a.form !== b.form) return a.form - b.form;
         return a.lastName.localeCompare(b.lastName);
       }
+      
+      // Apply sort direction
+      return sortDirection === "asc" ? comparison : -comparison;
     });
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+  };
 
   // Function to handle promoting students
   const openPromoteDialog = (form: number) => {
@@ -148,8 +159,19 @@ const Students: React.FC = () => {
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Sort By <ChevronDown className="ml-2 h-4 w-4" />
+                <Button variant="outline" className="flex gap-1 items-center">
+                  Sort By: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="p-0 h-4 w-4" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSortDirection();
+                    }}
+                  >
+                    {sortDirection === "asc" ? "↑" : "↓"}
+                  </Button>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -211,7 +233,7 @@ const Students: React.FC = () => {
                   <CardHeader className="pb-2">
                     <CardTitle className="flex justify-between items-center">
                       <span>
-                        {student.firstName} {student.lastName}
+                        {student.lastName}, {student.firstName}
                       </span>
                       <span className={`text-sm px-2 py-1 rounded-full ${
                         student.form === 5 
