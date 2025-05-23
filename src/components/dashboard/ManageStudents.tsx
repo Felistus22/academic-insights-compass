@@ -5,16 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, UserPlus } from "lucide-react";
+import { Edit, Trash2, UserPlus, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import StudentForm from "./forms/StudentForm";
 import { Student } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const ManageStudents: React.FC = () => {
   const { students, currentTeacher, deleteStudent } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  
+  // Sender phone number for SMS and WhatsApp
+  const senderPhoneNumber = "+255697127596";
 
   // Only admin can access this page
   if (currentTeacher?.role !== "admin") {
@@ -68,6 +74,45 @@ const ManageStudents: React.FC = () => {
     setEditingStudent(student);
     setShowAddForm(true);
   };
+  
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+  
+  const toggleAllStudents = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(filteredStudents.map(student => student.id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+  
+  const sendNotification = async () => {
+    if (selectedStudents.length === 0) {
+      toast.error("Please select at least one student");
+      return;
+    }
+    
+    setIsSending(true);
+    toast.info(`Sending notifications to ${selectedStudents.length} guardians...`);
+    
+    try {
+      // Simulate API call to send SMS
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast.success(`Successfully sent notifications to ${selectedStudents.length} guardians from ${senderPhoneNumber}`);
+      setSelectedStudents([]);
+    } catch (error) {
+      console.error("Error sending notifications:", error);
+      toast.error("An error occurred while sending notifications");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -100,10 +145,23 @@ const ManageStudents: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border rounded-md w-full max-w-sm"
             />
-            <Button onClick={() => setShowAddForm(true)} className="bg-education-primary hover:bg-education-dark">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Student
-            </Button>
+            <div className="flex gap-2">
+              {selectedStudents.length > 0 && (
+                <Button 
+                  variant="outline"
+                  onClick={sendNotification}
+                  disabled={isSending}
+                  className="flex items-center"
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Send Notification ({selectedStudents.length})
+                </Button>
+              )}
+              <Button onClick={() => setShowAddForm(true)} className="bg-education-primary hover:bg-education-dark">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Student
+              </Button>
+            </div>
           </div>
 
           <Card>
@@ -111,12 +169,22 @@ const ManageStudents: React.FC = () => {
               <CardTitle>Student Records</CardTitle>
               <CardDescription>
                 Displaying {filteredStudents.length} of {students.length} students
+                {selectedStudents.length > 0 && ` (${selectedStudents.length} selected)`}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox 
+                        checked={
+                          filteredStudents.length > 0 &&
+                          selectedStudents.length === filteredStudents.length
+                        }
+                        onCheckedChange={(checked) => toggleAllStudents(!!checked)}
+                      />
+                    </TableHead>
                     <TableHead>Student</TableHead>
                     <TableHead>Admission No.</TableHead>
                     <TableHead>Form</TableHead>
@@ -128,6 +196,12 @@ const ManageStudents: React.FC = () => {
                 <TableBody>
                   {filteredStudents.map((student) => (
                     <TableRow key={student.id}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedStudents.includes(student.id)}
+                          onCheckedChange={() => toggleStudentSelection(student.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <Avatar>
@@ -162,7 +236,7 @@ const ManageStudents: React.FC = () => {
 
                   {filteredStudents.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6">
+                      <TableCell colSpan={7} className="text-center py-6">
                         No students found
                       </TableCell>
                     </TableRow>

@@ -14,7 +14,9 @@ import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MessageSquare, Share, Phone } from "lucide-react";
+import { FileText, MessageSquare, Share, Phone, Send } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Student } from "@/types";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -25,18 +27,33 @@ const Reports: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>("2023");
   const [selectedTerm, setSelectedTerm] = useState<string>("1");
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  
+  // Phone number for sending messages
+  const senderPhoneNumber = "+255697127596";
   
   // Available years and terms
   const availableYears = Array.from(new Set(exams.map(exam => exam.year))).sort();
   
-  // Filter students by stream if needed
-  const filteredStudents = selectedStream === "all"
-    ? students
-    : students.filter(s => s.stream === selectedStream);
+  // Filter students by form and stream if needed
+  const filteredStudents = React.useMemo(() => {
+    let result = students;
+    
+    if (selectedForm !== "all") {
+      result = result.filter(s => s.form === parseInt(selectedForm));
+    }
+    
+    if (selectedStream !== "all") {
+      result = result.filter(s => s.stream === selectedStream);
+    }
+    
+    return result;
+  }, [students, selectedForm, selectedStream]);
   
   // Generate PDF for student report
-  const generateStudentPDF = async (forSharing: boolean = false) => {
-    const reportElement = document.getElementById("student-report");
+  const generateStudentPDF = async (forSharing: boolean = false, studentId: string = selectedStudent) => {
+    const reportElement = document.getElementById(`student-report-${studentId || "main"}`);
     if (!reportElement) return null;
     
     toast.info("Generating PDF...");
@@ -70,7 +87,11 @@ const Reports: React.FC = () => {
         return blobUrl;
       } else {
         // Download the PDF
-        pdf.save("student-report.pdf");
+        const student = students.find(s => s.id === studentId);
+        const fileName = student 
+          ? `report-${student.firstName}-${student.lastName}-form${student.form}.pdf` 
+          : "student-report.pdf";
+        pdf.save(fileName);
         toast.success("PDF downloaded successfully!");
         return null;
       }
@@ -116,8 +137,27 @@ const Reports: React.FC = () => {
     }
   };
   
+  // Toggle student selection for batch operations
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+  
+  // Select all students in the current form/stream
+  const selectAllStudents = () => {
+    setSelectedStudentIds(filteredStudents.map(student => student.id));
+  };
+  
+  // Deselect all students
+  const deselectAllStudents = () => {
+    setSelectedStudentIds([]);
+  };
+  
   // Simulate sending SMS with detailed performance data
-  const sendSMS = (studentId: string) => {
+  const sendSMS = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
@@ -135,11 +175,41 @@ const Reports: React.FC = () => {
     
     toast.info(`Sending report to ${student.guardianName} at ${student.guardianPhone}...`);
     console.log("SMS message content:", smsMessage);
+    console.log(`Sending from ${senderPhoneNumber} to ${student.guardianPhone}`);
     
     // Simulate API call for SMS
-    setTimeout(() => {
-      toast.success(`Report summary sent to ${student.guardianName} successfully!`);
-    }, 2000);
+    return new Promise<void>(resolve => {
+      setTimeout(() => {
+        toast.success(`Report summary sent to ${student.guardianName} successfully!`);
+        resolve();
+      }, 2000);
+    });
+  };
+  
+  // Send batch SMS to multiple students
+  const sendBatchSMS = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast.error("Please select at least one student");
+      return;
+    }
+    
+    setIsSending(true);
+    toast.info(`Sending reports to ${selectedStudentIds.length} guardians...`);
+    
+    try {
+      // Process in batches of 5 to avoid overwhelming the system
+      for (let i = 0; i < selectedStudentIds.length; i += 5) {
+        const batch = selectedStudentIds.slice(i, i + 5);
+        await Promise.all(batch.map(id => sendSMS(id)));
+      }
+      
+      toast.success(`Successfully sent ${selectedStudentIds.length} reports!`);
+    } catch (error) {
+      console.error("Error sending batch SMS:", error);
+      toast.error("An error occurred while sending reports");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Share report via WhatsApp with PDF attachment instructions
@@ -148,7 +218,7 @@ const Reports: React.FC = () => {
     if (!student) return;
     
     // Generate PDF first
-    const pdfUrl = await generateStudentPDF(true);
+    const pdfUrl = await generateStudentPDF(true, studentId);
     if (!pdfUrl) {
       toast.error("Failed to generate PDF for sharing");
       return;
@@ -163,10 +233,36 @@ const Reports: React.FC = () => {
     );
     
     // Open WhatsApp with pre-filled message to send TO the guardian
-    const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
+    // Note: Using the sender phone number as the "from" number
+    const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}&source=${senderPhoneNumber.replace(/\D/g, '')}`;
     window.open(whatsappURL, '_blank');
     
     toast.success(`Opening WhatsApp to send message to ${student.guardianName}. Please share the downloaded PDF separately.`);
+  };
+  
+  // Share batch reports via WhatsApp
+  const shareBatchViaWhatsApp = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast.error("Please select at least one student");
+      return;
+    }
+    
+    setIsSending(true);
+    toast.info(`Preparing WhatsApp messages for ${selectedStudentIds.length} guardians...`);
+    
+    try {
+      // Process sequentially as each will open a new window
+      for (const studentId of selectedStudentIds) {
+        await shareViaWhatsApp(studentId);
+        // Add a small delay between openings to avoid browser blocking
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    } catch (error) {
+      console.error("Error sharing batch reports:", error);
+      toast.error("An error occurred while preparing WhatsApp messages");
+    } finally {
+      setIsSending(false);
+    }
   };
   
   // Helper function to get student position info
@@ -336,6 +432,25 @@ const Reports: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <Label htmlFor="form">Form</Label>
+                  <Select
+                    value={selectedForm}
+                    onValueChange={setSelectedForm}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Form" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Forms</SelectItem>
+                      <SelectItem value="1">Form 1</SelectItem>
+                      <SelectItem value="2">Form 2</SelectItem>
+                      <SelectItem value="3">Form 3</SelectItem>
+                      <SelectItem value="4">Form 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="stream">Stream</Label>
                   <Select
                     value={selectedStream}
@@ -389,7 +504,7 @@ const Reports: React.FC = () => {
                 </div>
               </div>
               
-              {selectedStudent && (
+              {selectedStudent ? (
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button onClick={() => generateStudentPDF()}>
                     <FileText className="mr-2 h-4 w-4" />
@@ -400,7 +515,7 @@ const Reports: React.FC = () => {
                     onClick={() => sendSMS(selectedStudent)}
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    Send SMS to Guardian
+                    Send SMS to Guardian ({senderPhoneNumber})
                   </Button>
                   <Button 
                     variant="outline"
@@ -408,8 +523,14 @@ const Reports: React.FC = () => {
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
                     <Share className="mr-2 h-4 w-4" />
-                    Share via WhatsApp
+                    Share via WhatsApp ({senderPhoneNumber})
                   </Button>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    To view an individual student report, select a student from the dropdown above.
+                  </p>
                 </div>
               )}
               
@@ -440,13 +561,135 @@ const Reports: React.FC = () => {
             </CardContent>
           </Card>
           
+          {/* Batch Operations Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Batch Report Operations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    Select students to perform batch operations
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={selectAllStudents}
+                    >
+                      Select All
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={deselectAllStudents}
+                    >
+                      Deselect All
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="max-h-60 overflow-y-auto border rounded-md">
+                  <table className="w-full">
+                    <thead className="bg-muted sticky top-0">
+                      <tr>
+                        <th className="w-12 p-2 text-center">
+                          <Checkbox 
+                            checked={
+                              filteredStudents.length > 0 && 
+                              selectedStudentIds.length === filteredStudents.length
+                            }
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                selectAllStudents();
+                              } else {
+                                deselectAllStudents();
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className="p-2 text-left">Name</th>
+                        <th className="p-2 text-left">Admission No.</th>
+                        <th className="p-2 text-left">Form</th>
+                        <th className="p-2 text-left">Guardian</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.length > 0 ? (
+                        filteredStudents.map(student => (
+                          <tr key={student.id} className="border-t hover:bg-muted/50">
+                            <td className="p-2 text-center">
+                              <Checkbox
+                                checked={selectedStudentIds.includes(student.id)}
+                                onCheckedChange={() => toggleStudentSelection(student.id)}
+                              />
+                            </td>
+                            <td className="p-2">{student.firstName} {student.lastName}</td>
+                            <td className="p-2">{student.admissionNumber}</td>
+                            <td className="p-2">Form {student.form}{student.stream ? ` ${student.stream}` : ''}</td>
+                            <td className="p-2">{student.guardianName}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                            No students match the selected criteria
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {selectedStudentIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <p className="w-full text-sm">
+                      {selectedStudentIds.length} student(s) selected
+                    </p>
+                    <Button 
+                      onClick={sendBatchSMS}
+                      disabled={isSending}
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Send {selectedStudentIds.length} SMS Reports ({senderPhoneNumber})
+                    </Button>
+                    <Button 
+                      className="bg-green-500 text-white hover:bg-green-600 border-0"
+                      onClick={shareBatchViaWhatsApp}
+                      disabled={isSending}
+                    >
+                      <Share className="mr-2 h-4 w-4" />
+                      Share {selectedStudentIds.length} Reports via WhatsApp ({senderPhoneNumber})
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
           {selectedStudent && (
-            <StudentReportCard
-              studentId={selectedStudent}
-              year={parseInt(selectedYear)}
-              term={parseInt(selectedTerm) as 1 | 2}
-            />
+            <div id="student-report-main">
+              <StudentReportCard
+                studentId={selectedStudent}
+                year={parseInt(selectedYear)}
+                term={parseInt(selectedTerm) as 1 | 2}
+              />
+            </div>
           )}
+          
+          {/* Hidden report cards for batch operations */}
+          <div className="hidden">
+            {selectedStudentIds.map((studentId) => (
+              <div key={studentId} id={`student-report-${studentId}`}>
+                <StudentReportCard
+                  studentId={studentId}
+                  year={parseInt(selectedYear)}
+                  term={parseInt(selectedTerm) as 1 | 2}
+                />
+              </div>
+            ))}
+          </div>
         </TabsContent>
         
         <TabsContent value="form" className="space-y-4">
@@ -532,6 +775,14 @@ const Reports: React.FC = () => {
                 <Button onClick={generateFormPDF}>
                   <FileText className="mr-2 h-4 w-4" />
                   Download PDF
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={sendBatchSMS}
+                  disabled={isSending}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Reports to All Form {selectedForm} Guardians
                 </Button>
               </div>
             </CardContent>

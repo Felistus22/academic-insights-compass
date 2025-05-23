@@ -171,7 +171,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
   }
 
   return (
-    <Card id="student-report" className="print:shadow-none">
+    <Card id={`student-report-${studentId}`} className="print:shadow-none">
       <CardHeader className="text-center border-b pb-4">
         <div className="flex justify-center mb-2">
           <div className="h-20 w-20 rounded-full bg-education-primary flex items-center justify-center">
