@@ -38,8 +38,24 @@ const ManageStudents: React.FC = () => {
       return matchesSearch;
     })
     .sort((a, b) => {
+      // Improved sorting: first by form, then by admission number
       if (a.form !== b.form) return a.form - b.form;
-      return a.lastName.localeCompare(b.lastName);
+      
+      // Extract any numeric parts for proper numeric comparison
+      const admNoA = a.admissionNumber;
+      const admNoB = b.admissionNumber;
+      
+      const numA = admNoA.replace(/^\D+/g, '');
+      const numB = admNoB.replace(/^\D+/g, '');
+      
+      if (numA && numB) {
+        // If both have numeric parts, compare those numerically
+        const numCompare = parseInt(numA) - parseInt(numB);
+        if (numCompare !== 0) return numCompare;
+      }
+      
+      // Fall back to string comparison if numeric comparison doesn't yield a result
+      return a.admissionNumber.localeCompare(b.admissionNumber);
     });
 
   const handleDelete = (student: Student) => {

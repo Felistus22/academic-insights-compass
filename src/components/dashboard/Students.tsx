@@ -48,15 +48,31 @@ const Students: React.FC = () => {
       return matchesSearch && matchesForm;
     })
     .sort((a, b) => {
-      // Sort by selected field
+      // Improved sort by selected field
       let comparison = 0;
       
       if (sortBy === "firstName") {
-        comparison = a.firstName.localeCompare(b.firstName);
+        comparison = a.firstName.localeCompare(b.firstName, undefined, { sensitivity: 'base' });
       } else if (sortBy === "lastName") {
-        comparison = a.lastName.localeCompare(b.lastName);
+        comparison = a.lastName.localeCompare(b.lastName, undefined, { sensitivity: 'base' });
       } else if (sortBy === "admissionNumber") {
-        comparison = a.admissionNumber.localeCompare(b.admissionNumber);
+        // Handle numeric parts of admission numbers properly
+        const admNoA = a.admissionNumber;
+        const admNoB = b.admissionNumber;
+        
+        // If both admission numbers are in the same format (e.g., ABC123)
+        // Extract any numeric parts for proper numeric comparison
+        const numA = admNoA.replace(/^\D+/g, '');
+        const numB = admNoB.replace(/^\D+/g, '');
+        
+        if (numA && numB) {
+          // If both have numeric parts, compare those numerically
+          const numCompare = parseInt(numA) - parseInt(numB);
+          if (numCompare !== 0) return numCompare;
+        }
+        
+        // Fall back to string comparison if numeric comparison doesn't yield a result
+        comparison = admNoA.localeCompare(admNoB);
       } else {
         // Default fallback sort (by form then last name)
         if (a.form !== b.form) return a.form - b.form;
