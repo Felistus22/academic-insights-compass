@@ -16,7 +16,7 @@ const DashboardHome: React.FC = () => {
   const totalSubjects = subjects.length;
   const totalExams = exams.length;
 
-  // Students by form distribution with proper labeling
+  // Students by form distribution with proper labeling (changed to bar chart data)
   const studentsByForm = [1, 2, 3, 4, 5].map(form => ({
     form: form === 5 ? "Alumni" : `Form ${form}`,
     students: students.filter(student => student.form === form).length
@@ -220,23 +220,13 @@ const DashboardHome: React.FC = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={studentsByForm}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="students"
-                >
-                  {studentsByForm.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
-                  ))}
-                </Pie>
+              <BarChart data={studentsByForm} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="form" />
+                <YAxis />
                 <Tooltip />
-              </PieChart>
+                <Bar dataKey="students" fill="#10B981" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

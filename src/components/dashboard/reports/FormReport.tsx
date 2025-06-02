@@ -27,13 +27,11 @@ const FormReport: React.FC = () => {
     .filter(exam => exam.form === selectedForm)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Get current exam and previous exam for improvement calculation
+  // Get current exam
   const currentExam = formExams.find(exam => exam.id === selectedExam);
-  const currentExamIndex = formExams.findIndex(exam => exam.id === selectedExam);
-  const previousExam = currentExamIndex < formExams.length - 1 ? formExams[currentExamIndex + 1] : null;
 
-  // Calculate student performance and improvements
-  const getStudentPerformance = () => {
+  // Calculate student performance and rankings for the selected exam
+  const getStudentRankings = () => {
     if (!currentExam) return [];
 
     const studentPerformance = formStudents.map(student => {
@@ -41,63 +39,43 @@ const FormReport: React.FC = () => {
       const currentMarks = marks.filter(mark => 
         mark.studentId === student.id && mark.examId === currentExam.id
       );
-      
-      // Get marks for previous exam (if exists)
-      const previousMarks = previousExam ? marks.filter(mark => 
-        mark.studentId === student.id && mark.examId === previousExam.id
-      ) : [];
 
       // Calculate current average
       const currentAverage = currentMarks.length > 0 
         ? currentMarks.reduce((sum, mark) => sum + mark.score, 0) / currentMarks.length 
         : 0;
 
-      // Calculate previous average
-      const previousAverage = previousMarks.length > 0 
-        ? previousMarks.reduce((sum, mark) => sum + mark.score, 0) / previousMarks.length 
-        : 0;
-
-      // Calculate improvement (only if there's a previous exam)
-      const improvement = previousExam && previousAverage > 0 
-        ? currentAverage - previousAverage 
-        : 0;
-
       return {
         student,
-        currentAverage: Math.round(currentAverage * 100) / 100,
-        previousAverage: Math.round(previousAverage * 100) / 100,
-        improvement: Math.round(improvement * 100) / 100,
-        subjectCount: currentMarks.length
+        average: Math.round(currentAverage * 100) / 100,
+        subjectCount: currentMarks.length,
+        marks: currentMarks
       };
     });
 
-    return studentPerformance.filter(perf => perf.subjectCount > 0);
+    // Sort by average and add ranking
+    const rankedStudents = studentPerformance
+      .filter(perf => perf.subjectCount > 0)
+      .sort((a, b) => b.average - a.average)
+      .map((perf, index) => ({
+        ...perf,
+        rank: index + 1
+      }));
+
+    return rankedStudents;
   };
 
-  const studentPerformance = getStudentPerformance();
-
-  // Get 10 most improved students (only if there's a previous exam)
-  const mostImprovedStudents = previousExam 
-    ? studentPerformance
-        .filter(perf => perf.improvement > 0) // Only students who improved
-        .sort((a, b) => b.improvement - a.improvement)
-        .slice(0, 10)
-    : [];
-
-  // Get top 10 students by current performance (fallback if no previous exam)
-  const topStudents = studentPerformance
-    .sort((a, b) => b.currentAverage - a.currentAverage)
-    .slice(0, 10);
+  const studentRankings = getStudentRankings();
 
   // Calculate class statistics
   const classStats = {
     totalStudents: formStudents.length,
-    studentsWithMarks: studentPerformance.length,
-    averageMark: studentPerformance.length > 0
-      ? Math.round((studentPerformance.reduce((sum, perf) => sum + perf.currentAverage, 0) / studentPerformance.length) * 100) / 100
+    studentsWithMarks: studentRankings.length,
+    averageMark: studentRankings.length > 0
+      ? Math.round((studentRankings.reduce((sum, student) => sum + student.average, 0) / studentRankings.length) * 100) / 100
       : 0,
-    passRate: studentPerformance.length > 0
-      ? Math.round((studentPerformance.filter(perf => perf.currentAverage >= 50).length / studentPerformance.length) * 100)
+    passRate: studentRankings.length > 0
+      ? Math.round((studentRankings.filter(student => student.average >= 50).length / studentRankings.length) * 100)
       : 0
   };
 
@@ -113,19 +91,30 @@ const FormReport: React.FC = () => {
       ? subjectMarks.reduce((sum, mark) => sum + mark.score, 0) / subjectMarks.length
       : 0;
 
+    const highestScore = subjectMarks.length > 0 
+      ? Math.max(...subjectMarks.map(mark => mark.score))
+      : 0;
+
+    const lowestScore = subjectMarks.length > 0 
+      ? Math.min(...subjectMarks.map(mark => mark.score))
+      : 0;
+
     return {
       name: subject.name,
-      average: Math.round(average * 100) / 100
+      average: Math.round(average * 100) / 100,
+      highest: highestScore,
+      lowest: lowestScore,
+      studentsCount: subjectMarks.length
     };
   }).filter(subject => subject.average > 0);
 
   // Grade distribution data
   const gradeDistribution = [
-    { name: 'A (80-100)', value: studentPerformance.filter(p => p.currentAverage >= 80).length, color: '#10B981' },
-    { name: 'B (65-79)', value: studentPerformance.filter(p => p.currentAverage >= 65 && p.currentAverage < 80).length, color: '#3B82F6' },
-    { name: 'C (50-64)', value: studentPerformance.filter(p => p.currentAverage >= 50 && p.currentAverage < 65).length, color: '#F59E0B' },
-    { name: 'D (40-49)', value: studentPerformance.filter(p => p.currentAverage >= 40 && p.currentAverage < 50).length, color: '#EF4444' },
-    { name: 'F (0-39)', value: studentPerformance.filter(p => p.currentAverage < 40).length, color: '#6B7280' }
+    { name: 'A (80-100)', value: studentRankings.filter(s => s.average >= 80).length, color: '#10B981' },
+    { name: 'B (65-79)', value: studentRankings.filter(s => s.average >= 65 && s.average < 80).length, color: '#3B82F6' },
+    { name: 'C (50-64)', value: studentRankings.filter(s => s.average >= 50 && s.average < 65).length, color: '#F59E0B' },
+    { name: 'D (40-49)', value: studentRankings.filter(s => s.average >= 40 && s.average < 50).length, color: '#EF4444' },
+    { name: 'F (0-39)', value: studentRankings.filter(s => s.average < 40).length, color: '#6B7280' }
   ].filter(grade => grade.value > 0);
 
   const generatePDF = async () => {
@@ -147,7 +136,6 @@ const FormReport: React.FC = () => {
         allowTaint: true
       });
 
-      const imgData = canvas.getImageData();
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 295;
@@ -351,56 +339,77 @@ const FormReport: React.FC = () => {
           </Card>
         </div>
 
-        {/* Most Improved Students (if previous exam exists) or Top Students */}
+        {/* Student Rankings */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              {previousExam && mostImprovedStudents.length > 0 
-                ? `Top 10 Most Improved Students (from ${previousExam.name})`
-                : "Top 10 Students by Performance"
-              }
-            </CardTitle>
+            <CardTitle>Student Rankings</CardTitle>
             <CardDescription>
-              {previousExam && mostImprovedStudents.length > 0
-                ? "Students showing the greatest improvement from previous exam"
-                : "Highest performing students in this exam"
-              }
+              Top performing students in {currentExam.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {(mostImprovedStudents.length > 0 ? mostImprovedStudents : topStudents).map((performance, index) => (
-                <div key={performance.student.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {studentRankings.map((ranking) => (
+                <div key={ranking.student.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center">
-                      {index + 1}
+                    <Badge variant="outline" className="w-10 h-8 rounded-full flex items-center justify-center font-bold">
+                      {ranking.rank}
                     </Badge>
                     <div>
                       <p className="font-medium">
-                        {performance.student.firstName} {performance.student.lastName}
+                        {ranking.student.firstName} {ranking.student.lastName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {performance.student.admissionNumber}
+                        {ranking.student.admissionNumber}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">
-                      Current: {performance.currentAverage}%
+                    <p className="font-medium text-lg">
+                      {ranking.average}%
                     </p>
-                    {previousExam && mostImprovedStudents.length > 0 && (
-                      <p className="text-sm text-green-600">
-                        Improved by: +{performance.improvement}%
-                      </p>
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {ranking.subjectCount} subjects
+                    </p>
                   </div>
                 </div>
               ))}
-              {mostImprovedStudents.length === 0 && previousExam && (
-                <p className="text-center text-muted-foreground py-4">
-                  No students showed improvement from the previous exam
-                </p>
-              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subject Performance Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Subject Performance Summary</CardTitle>
+            <CardDescription>
+              Detailed breakdown by subject for {currentExam.name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {subjectPerformance.map((subject) => (
+                <div key={subject.name} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium">{subject.name}</h4>
+                    <Badge variant="secondary">{subject.studentsCount} students</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Average</p>
+                      <p className="font-medium text-lg">{subject.average}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Highest</p>
+                      <p className="font-medium text-lg text-green-600">{subject.highest}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Lowest</p>
+                      <p className="font-medium text-lg text-red-600">{subject.lowest}%</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
