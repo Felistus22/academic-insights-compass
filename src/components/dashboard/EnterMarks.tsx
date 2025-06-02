@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,16 +31,20 @@ const EnterMarks: React.FC = () => {
   const [customExamYear, setCustomExamYear] = useState<string>(new Date().getFullYear().toString());
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
-  // Filter students by selected class and stream
+  // Filter students by selected class and stream with proper sorting
   const filteredStudents = students
     .filter((student) => 
       (selectedClass === 0 || student.form === selectedClass) &&
       (selectedStream === "all" || student.stream === selectedStream)
     )
     .sort((a, b) => {
-      // Sort by last name by default
-      const comparison = a.lastName.localeCompare(b.lastName);
-      return sortDirection === "asc" ? comparison : -comparison;
+      // Sort by last name, then first name
+      const lastNameComparison = a.lastName.localeCompare(b.lastName);
+      if (lastNameComparison !== 0) {
+        return sortDirection === "asc" ? lastNameComparison : -lastNameComparison;
+      }
+      const firstNameComparison = a.firstName.localeCompare(b.firstName);
+      return sortDirection === "asc" ? firstNameComparison : -firstNameComparison;
     });
   
   // Filter exams by selected class

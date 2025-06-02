@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, UserPlus, MessageSquare, Send } from "lucide-react";
+import { Edit, Trash2, UserPlus, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import StudentForm from "./forms/StudentForm";
 import { Student } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ManageStudents: React.FC = () => {
   const { students, currentTeacher, deleteStudent } = useAppContext();
@@ -18,6 +19,8 @@ const ManageStudents: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [studentsPerPage, setStudentsPerPage] = useState(10);
   
   // Sender phone number for SMS and WhatsApp
   const senderPhoneNumber = "+255697127596";
@@ -64,6 +67,12 @@ const ManageStudents: React.FC = () => {
       return a.admissionNumber.localeCompare(b.admissionNumber);
     });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+  const startIndex = (currentPage - 1) * studentsPerPage;
+  const endIndex = startIndex + studentsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
   const handleDelete = (student: Student) => {
     if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
       deleteStudent(student.id);
@@ -85,7 +94,7 @@ const ManageStudents: React.FC = () => {
   
   const toggleAllStudents = (checked: boolean) => {
     if (checked) {
-      setSelectedStudents(filteredStudents.map(student => student.id));
+      setSelectedStudents(paginatedStudents.map(student => student.id));
     } else {
       setSelectedStudents([]);
     }
@@ -112,6 +121,17 @@ const ManageStudents: React.FC = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedStudents([]); // Clear selections when changing pages
+  };
+
+  const handleStudentsPerPageChange = (value: string) => {
+    setStudentsPerPage(parseInt(value));
+    setCurrentPage(1); // Reset to first page
+    setSelectedStudents([]); // Clear selections
   };
 
   return (
@@ -168,19 +188,66 @@ const ManageStudents: React.FC = () => {
             <CardHeader>
               <CardTitle>Student Records</CardTitle>
               <CardDescription>
-                Displaying {filteredStudents.length} of {students.length} students
+                Displaying {startIndex + 1}-{Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} students
                 {selectedStudents.length > 0 && ` (${selectedStudents.length} selected)`}
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">Show:</span>
+                  <Select value={studentsPerPage.toString()} onValueChange={handleStudentsPerPageChange}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">per page</span>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    
+                    <span className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox 
                         checked={
-                          filteredStudents.length > 0 &&
-                          selectedStudents.length === filteredStudents.length
+                          paginatedStudents.length > 0 &&
+                          selectedStudents.length === paginatedStudents.length &&
+                          paginatedStudents.every(student => selectedStudents.includes(student.id))
                         }
                         onCheckedChange={(checked) => toggleAllStudents(!!checked)}
                       />
@@ -194,7 +261,7 @@ const ManageStudents: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredStudents.map((student) => (
+                  {paginatedStudents.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell>
                         <Checkbox 
@@ -234,7 +301,7 @@ const ManageStudents: React.FC = () => {
                     </TableRow>
                   ))}
 
-                  {filteredStudents.length === 0 && (
+                  {paginatedStudents.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-6">
                         No students found

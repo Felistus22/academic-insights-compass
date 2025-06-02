@@ -1,252 +1,351 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppContext } from "@/contexts/AppContext";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Users, BookOpen, GraduationCap, TrendingUp, Calendar, Award, Clock, Bell } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 const DashboardHome: React.FC = () => {
-  const { students, subjects, exams, marks, currentTeacher } = useAppContext();
-  
-  // Get latest activity logs
-  const formCounts = students.reduce((acc, student) => {
-    acc[`Form ${student.form}`] = (acc[`Form ${student.form}`] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const formCountsData = Object.entries(formCounts).map(([form, count]) => ({
-    form,
-    count,
-  }));
-  
-  // Calculate average marks by subject
-  const calculateSubjectAverages = () => {
-    const subjectTotals: Record<string, { total: number; count: number }> = {};
+  const { students, teachers, subjects, exams, marks, currentTeacher } = useAppContext();
+
+  // Calculate basic statistics
+  const totalStudents = students.length;
+  const totalTeachers = teachers.length;
+  const totalSubjects = subjects.length;
+  const totalExams = exams.length;
+
+  // Students by form distribution with proper labeling
+  const studentsByForm = [1, 2, 3, 4, 5].map(form => ({
+    form: form === 5 ? "Alumni" : `Form ${form}`,
+    students: students.filter(student => student.form === form).length
+  })).filter(item => item.students > 0);
+
+  // Recent exams (last 5)
+  const recentExams = exams
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
+  // Average marks by subject with complete subject names
+  const subjectPerformance = subjects.map(subject => {
+    const subjectMarks = marks.filter(mark => mark.subjectId === subject.id);
+    const average = subjectMarks.length > 0 
+      ? subjectMarks.reduce((sum, mark) => sum + mark.score, 0) / subjectMarks.length 
+      : 0;
     
-    marks.forEach((mark) => {
-      if (!subjectTotals[mark.subjectId]) {
-        subjectTotals[mark.subjectId] = { total: 0, count: 0 };
-      }
-      subjectTotals[mark.subjectId].total += mark.score;
-      subjectTotals[mark.subjectId].count++;
-    });
-    
-    return subjects.map((subject) => {
-      const data = subjectTotals[subject.id] || { total: 0, count: 0 };
-      const average = data.count ? Math.round(data.total / data.count) : 0;
+    return {
+      name: subject.name.length > 15 ? subject.name.substring(0, 12) + "..." : subject.name,
+      fullName: subject.name,
+      average: Math.round(average * 100) / 100
+    };
+  }).filter(subject => subject.average > 0);
+
+  // Performance trend (last 6 months of exams)
+  const performanceTrend = exams
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-6)
+    .map(exam => {
+      const examMarks = marks.filter(mark => mark.examId === exam.id);
+      const average = examMarks.length > 0 
+        ? examMarks.reduce((sum, mark) => sum + mark.score, 0) / examMarks.length 
+        : 0;
+      
       return {
-        subject: subject.name,
-        average,
+        name: exam.name,
+        average: Math.round(average * 100) / 100,
+        date: new Date(exam.date).toLocaleDateString()
       };
     });
+
+  // Grade distribution
+  const gradeDistribution = [
+    { name: 'A (80-100)', value: 0, color: '#10B981' },
+    { name: 'B (65-79)', value: 0, color: '#3B82F6' },
+    { name: 'C (50-64)', value: 0, color: '#F59E0B' },
+    { name: 'D (40-49)', value: 0, color: '#EF4444' },
+    { name: 'F (0-39)', value: 0, color: '#6B7280' }
+  ];
+
+  marks.forEach(mark => {
+    if (mark.score >= 80) gradeDistribution[0].value++;
+    else if (mark.score >= 65) gradeDistribution[1].value++;
+    else if (mark.score >= 50) gradeDistribution[2].value++;
+    else if (mark.score >= 40) gradeDistribution[3].value++;
+    else gradeDistribution[4].value++;
+  });
+
+  // Filter out empty grades
+  const filteredGradeDistribution = gradeDistribution.filter(grade => grade.value > 0);
+
+  // Top performing students (overall)
+  const topStudents = students
+    .map(student => {
+      const studentMarks = marks.filter(mark => mark.studentId === student.id);
+      const average = studentMarks.length > 0 
+        ? studentMarks.reduce((sum, mark) => sum + mark.score, 0) / studentMarks.length 
+        : 0;
+      
+      return { student, average: Math.round(average * 100) / 100 };
+    })
+    .filter(item => item.average > 0)
+    .sort((a, b) => b.average - a.average)
+    .slice(0, 5);
+
+  // Activity feed (recent exams and high scores)
+  const activities = [
+    ...recentExams.slice(0, 3).map(exam => ({
+      type: 'exam',
+      message: `${exam.name} conducted for Form ${exam.form}`,
+      date: exam.date,
+      icon: Calendar
+    })),
+    ...topStudents.slice(0, 2).map(({ student, average }) => ({
+      type: 'achievement',
+      message: `${student.firstName} ${student.lastName} achieved ${average}% average`,
+      date: new Date().toISOString(),
+      icon: Award
+    }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
+          <p className="font-medium">{payload[0]?.payload?.fullName || label}</p>
+          <p className="text-blue-600">
+            Average: {payload[0]?.value}%
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
-  
-  const subjectAverages = calculateSubjectAverages();
-  
-  // For teachers, filter to show only subjects they teach
-  const teacherSubjects = currentTeacher?.role === "teacher" 
-    ? subjectAverages.filter(item => 
-        currentTeacher.subjectIds.some(id => 
-          subjects.find(s => s.id === id)?.name === item.subject
-        )
-      )
-    : subjectAverages;
-  
-  // Calculate average marks by form
-  const calculateFormAverages = () => {
-    const formTotals: Record<number, { total: number; count: number }> = {};
-    
-    marks.forEach((mark) => {
-      const student = students.find(s => s.id === mark.studentId);
-      if (student) {
-        if (!formTotals[student.form]) {
-          formTotals[student.form] = { total: 0, count: 0 };
-        }
-        formTotals[student.form].total += mark.score;
-        formTotals[student.form].count++;
-      }
-    });
-    
-    return [1, 2, 3, 4].map((form) => {
-      const data = formTotals[form] || { total: 0, count: 0 };
-      const average = data.count ? Math.round(data.total / data.count) : 0;
-      return {
-        form: `Form ${form}`,
-        average,
-      };
-    });
-  };
-  
-  const formAverages = calculateFormAverages();
-  
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Welcome back, {currentTeacher?.firstName}!
+        </h2>
         <p className="text-muted-foreground">
-          Welcome back, {currentTeacher?.firstName}! Here's an overview of your school's performance.
+          Here's what's happening at your school today.
         </p>
       </div>
-      
+
+      {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
+            <div className="text-2xl font-bold">{totalStudents}</div>
+            <p className="text-xs text-muted-foreground">
+              Active enrollments
+            </p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Subjects</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-              <path d="M16 13H8" />
-              <path d="M16 17H8" />
-              <path d="M10 9H8" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Total Teachers</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{subjects.length}</div>
+            <div className="text-2xl font-bold">{totalTeachers}</div>
+            <p className="text-xs text-muted-foreground">
+              Faculty members
+            </p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Subjects</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{exams.length}</div>
+            <div className="text-2xl font-bold">{totalSubjects}</div>
+            <p className="text-xs text-muted-foreground">
+              Available courses
+            </p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Average</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Exams Conducted</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {marks.length > 0
-                ? `${Math.round(
-                    marks.reduce((sum, mark) => sum + mark.score, 0) / marks.length
-                  )}%`
-                : "N/A"}
-            </div>
+            <div className="text-2xl font-bold">{totalExams}</div>
+            <p className="text-xs text-muted-foreground">
+              Assessment records
+            </p>
           </CardContent>
         </Card>
       </div>
-      
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1">
+
+      {/* Charts */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Average Marks by Subject</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={subjectPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  fontSize={11}
+                  interval={0}
+                />
+                <YAxis />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="average" fill="#3B82F6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-3">
           <CardHeader>
             <CardTitle>Students by Form</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={formCountsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="form" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="count" fill="#1E88E5" name="Number of Students" />
-                </BarChart>
-              </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={studentsByForm}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="students"
+                >
+                  {studentsByForm.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performance Trend and Grade Distribution */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance Trend</CardTitle>
+            <CardDescription>
+              Average performance over recent exams
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={performanceTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="average" stroke="#3B82F6" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Grade Distribution</CardTitle>
+            <CardDescription>
+              Overall grade distribution across all exams
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={filteredGradeDistribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" fontSize={12} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#10B981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity and Top Students */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              Latest updates and achievements
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {activities.map((activity, index) => {
+                const Icon = activity.icon;
+                return (
+                  <div key={index} className="flex items-center space-x-3">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {activity.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="col-span-1">
+
+        <Card>
           <CardHeader>
-            <CardTitle>Average Marks by Form</CardTitle>
+            <CardTitle>Top Performing Students</CardTitle>
+            <CardDescription>
+              Students with highest overall averages
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={formAverages}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="form" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="average" fill="#43A047" name="Average Mark (%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-2">
-          <CardHeader>
-            <CardTitle>
-              {currentTeacher?.role === "teacher" 
-                ? "Your Subject Averages" 
-                : "Average Marks by Subject"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={teacherSubjects}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="subject" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="average" fill="#FF8F00" name="Average Mark (%)" />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="space-y-4">
+              {topStudents.map((item, index) => (
+                <div key={item.student.id} className="flex items-center space-x-3">
+                  <Avatar>
+                    <AvatarImage src={item.student.imageUrl} />
+                    <AvatarFallback>
+                      {item.student.firstName[0]}{item.student.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {item.student.firstName} {item.student.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Form {item.student.form} • {item.student.admissionNumber}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">
+                    {item.average}%
+                  </Badge>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
