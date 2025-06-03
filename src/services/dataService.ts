@@ -145,9 +145,13 @@ export class DataService {
   // Add a new student
   static async addStudent(studentData: Omit<Student, 'id'>): Promise<Student | null> {
     try {
+      // Generate a unique ID for the student
+      const studentId = `student_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const { data, error } = await supabase
         .from('students')
         .insert({
+          id: studentId,
           first_name: studentData.firstName,
           last_name: studentData.lastName,
           admission_number: studentData.admissionNumber,
@@ -185,9 +189,13 @@ export class DataService {
   // Add a new teacher
   static async addTeacher(teacherData: Omit<Teacher, 'id'>): Promise<Teacher | null> {
     try {
+      // Generate a unique ID for the teacher
+      const teacherId = `teacher_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const { data, error } = await supabase
         .from('teachers')
         .insert({
+          id: teacherId,
           first_name: teacherData.firstName,
           last_name: teacherData.lastName,
           email: teacherData.email,
@@ -313,6 +321,140 @@ export class DataService {
     } catch (error) {
       console.error('Error deleting teacher:', error);
       return false;
+    }
+  }
+
+  // Migrate all data from mock data to Supabase
+  static async migrateAllData(): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Import mock data
+      const { mockStudents, mockTeachers, mockSubjects, mockExams, mockMarks, mockActivityLogs } = await import('@/data/mockData');
+      
+      console.log('Starting data migration...');
+
+      // Migrate subjects first (as they are referenced by other tables)
+      console.log('Migrating subjects...');
+      for (const subject of mockSubjects) {
+        const { error } = await supabase
+          .from('subjects')
+          .insert({
+            id: subject.id,
+            name: subject.name,
+            code: subject.code
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating subject:', error);
+        }
+      }
+
+      // Migrate students
+      console.log('Migrating students...');
+      for (const student of mockStudents) {
+        const { error } = await supabase
+          .from('students')
+          .insert({
+            id: student.id,
+            first_name: student.firstName,
+            last_name: student.lastName,
+            admission_number: student.admissionNumber,
+            form: student.form,
+            stream: student.stream,
+            guardian_name: student.guardianName,
+            guardian_phone: student.guardianPhone,
+            image_url: student.imageUrl
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating student:', error);
+        }
+      }
+
+      // Migrate teachers
+      console.log('Migrating teachers...');
+      for (const teacher of mockTeachers) {
+        const { error } = await supabase
+          .from('teachers')
+          .insert({
+            id: teacher.id,
+            first_name: teacher.firstName,
+            last_name: teacher.lastName,
+            email: teacher.email,
+            password_hash: teacher.password,
+            role: teacher.role
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating teacher:', error);
+        }
+      }
+
+      // Migrate exams
+      console.log('Migrating exams...');
+      for (const exam of mockExams) {
+        const { error } = await supabase
+          .from('exams')
+          .insert({
+            id: exam.id,
+            name: exam.name,
+            type: exam.type,
+            date: exam.date,
+            form: exam.form,
+            term: exam.term,
+            year: exam.year
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating exam:', error);
+        }
+      }
+
+      // Migrate marks
+      console.log('Migrating marks...');
+      for (const mark of mockMarks) {
+        const { error } = await supabase
+          .from('marks')
+          .insert({
+            id: mark.id,
+            student_id: mark.studentId,
+            subject_id: mark.subjectId,
+            exam_id: mark.examId,
+            score: mark.score,
+            grade: mark.grade,
+            remarks: mark.remarks
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating mark:', error);
+        }
+      }
+
+      // Migrate activity logs
+      console.log('Migrating activity logs...');
+      for (const log of mockActivityLogs) {
+        const { error } = await supabase
+          .from('activity_logs')
+          .insert({
+            id: log.id,
+            teacher_id: log.teacherId,
+            action: log.action,
+            details: log.details,
+            timestamp: log.timestamp
+          });
+        
+        if (error && error.code !== '23505') { // Ignore duplicate key errors
+          console.error('Error migrating activity log:', error);
+        }
+      }
+
+      console.log('Data migration completed successfully!');
+      return { success: true };
+    } catch (error) {
+      console.error('Migration failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
     }
   }
 }
