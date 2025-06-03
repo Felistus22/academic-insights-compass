@@ -1,7 +1,22 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
-import { mockData } from "@/data/mockData";
+import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
+
+// Create a mockData object from the individual imports
+const mockData = {
+  subjects,
+  students,
+  teachers,
+  exams,
+  marks,
+  activityLogs,
+  teacherSubjects: [
+    { teacherId: "teacher1", subjectId: "subj1" },
+    { teacherId: "teacher1", subjectId: "subj3" },
+    { teacherId: "teacher2", subjectId: "subj2" },
+    { teacherId: "teacher2", subjectId: "subj6" },
+  ]
+};
 
 export class DataService {
   static async migrateAllData() {
