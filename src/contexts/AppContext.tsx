@@ -80,7 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const teacher = data.teachers.find(t => t.email === email && t.password === password);
+    const teacher = data.teachers.find(t => t.email === email && t.passwordHash === password);
     
     if (teacher) {
       setCurrentTeacher(teacher);
