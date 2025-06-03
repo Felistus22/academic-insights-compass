@@ -1,160 +1,23 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
-import { mockData } from "@/data/mockData";
+
+// Utility function to ensure type compliance
+const ensureValidEnum = <T extends string>(value: string, validValues: readonly T[], defaultValue: T): T => {
+  return validValues.includes(value as T) ? (value as T) : defaultValue;
+};
 
 export class DataService {
-  static async migrateAllData() {
-    try {
-      console.log("Starting data migration...");
-      
-      // Insert subjects first (no dependencies)
-      await this.insertSubjects();
-      
-      // Insert students (no dependencies)
-      await this.insertStudents();
-      
-      // Insert teachers (no dependencies)  
-      await this.insertTeachers();
-      
-      // Insert exams (depends on nothing)
-      await this.insertExams();
-      
-      // Insert marks (depends on students, subjects, exams)
-      await this.insertMarks();
-      
-      // Insert teacher subjects (depends on teachers, subjects)
-      await this.insertTeacherSubjects();
-      
-      // Insert activity logs (depends on teachers)
-      await this.insertActivityLogs();
-      
-      console.log("Data migration completed successfully!");
-      return { success: true };
-    } catch (error) {
-      console.error("Migration failed:", error);
-      return { success: false, error };
-    }
-  }
-
-  private static async insertSubjects() {
-    const { error } = await supabase
-      .from('subjects')
-      .insert(mockData.subjects);
-    
-    if (error) throw new Error(`Failed to insert subjects: ${error.message}`);
-    console.log("Subjects migrated successfully");
-  }
-
-  private static async insertStudents() {
-    const studentsData = mockData.students.map(student => ({
-      id: student.id,
-      first_name: student.firstName,
-      last_name: student.lastName,
-      admission_number: student.admissionNumber,
-      form: student.form,
-      stream: student.stream,
-      guardian_name: student.guardianName,
-      guardian_phone: student.guardianPhone,
-      image_url: student.imageUrl
-    }));
-
-    const { error } = await supabase
-      .from('students')
-      .insert(studentsData);
-    
-    if (error) throw new Error(`Failed to insert students: ${error.message}`);
-    console.log("Students migrated successfully");
-  }
-
-  private static async insertTeachers() {
-    const teachersData = mockData.teachers.map(teacher => ({
-      id: teacher.id,
-      first_name: teacher.firstName,
-      last_name: teacher.lastName,
-      email: teacher.email,
-      password_hash: teacher.passwordHash,
-      role: teacher.role
-    }));
-
-    const { error } = await supabase
-      .from('teachers')
-      .insert(teachersData);
-    
-    if (error) throw new Error(`Failed to insert teachers: ${error.message}`);
-    console.log("Teachers migrated successfully");
-  }
-
-  private static async insertExams() {
-    const { error } = await supabase
-      .from('exams')
-      .insert(mockData.exams);
-    
-    if (error) throw new Error(`Failed to insert exams: ${error.message}`);
-    console.log("Exams migrated successfully");
-  }
-
-  private static async insertMarks() {
-    const marksData = mockData.marks.map(mark => ({
-      id: mark.id,
-      student_id: mark.studentId,
-      subject_id: mark.subjectId,
-      exam_id: mark.examId,
-      score: mark.score,
-      grade: mark.grade,
-      remarks: mark.remarks
-    }));
-
-    const { error } = await supabase
-      .from('marks')
-      .insert(marksData);
-    
-    if (error) throw new Error(`Failed to insert marks: ${error.message}`);
-    console.log("Marks migrated successfully");
-  }
-
-  private static async insertTeacherSubjects() {
-    const teacherSubjectsData = mockData.teacherSubjects.map(ts => ({
-      teacher_id: ts.teacherId,
-      subject_id: ts.subjectId
-    }));
-
-    const { error } = await supabase
-      .from('teacher_subjects')
-      .insert(teacherSubjectsData);
-    
-    if (error) throw new Error(`Failed to insert teacher subjects: ${error.message}`);
-    console.log("Teacher subjects migrated successfully");
-  }
-
-  private static async insertActivityLogs() {
-    const activityLogsData = mockData.activityLogs.map(log => ({
-      id: log.id,
-      teacher_id: log.teacherId,
-      action: log.action,
-      details: log.details,
-      timestamp: log.timestamp
-    }));
-
-    const { error } = await supabase
-      .from('activity_logs')
-      .insert(activityLogsData);
-    
-    if (error) throw new Error(`Failed to insert activity logs: ${error.message}`);
-    console.log("Activity logs migrated successfully");
-  }
-
-  // Data fetching methods
+  // Fetch all students from Supabase
   static async fetchStudents(): Promise<Student[]> {
     const { data, error } = await supabase
       .from('students')
       .select('*')
-      .order('form', { ascending: true })
-      .order('admission_number', { ascending: true });
+      .order('last_name');
 
     if (error) {
-      console.error("Error fetching students:", error);
-      return [];
+      console.error('Error fetching students:', error);
+      throw error;
     }
 
     return data.map(student => ({
@@ -163,22 +26,23 @@ export class DataService {
       lastName: student.last_name,
       admissionNumber: student.admission_number,
       form: student.form,
-      stream: student.stream,
+      stream: ensureValidEnum(student.stream, ['A', 'B', 'C'] as const, 'A'),
       guardianName: student.guardian_name,
       guardianPhone: student.guardian_phone,
-      imageUrl: student.image_url
+      imageUrl: student.image_url || '/placeholder.svg'
     }));
   }
 
+  // Fetch all teachers from Supabase
   static async fetchTeachers(): Promise<Teacher[]> {
     const { data, error } = await supabase
       .from('teachers')
       .select('*')
-      .order('first_name', { ascending: true });
+      .order('last_name');
 
     if (error) {
-      console.error("Error fetching teachers:", error);
-      return [];
+      console.error('Error fetching teachers:', error);
+      throw error;
     }
 
     return data.map(teacher => ({
@@ -186,49 +50,64 @@ export class DataService {
       firstName: teacher.first_name,
       lastName: teacher.last_name,
       email: teacher.email,
-      passwordHash: teacher.password_hash,
-      role: teacher.role as 'teacher' | 'admin'
+      password: teacher.password_hash,
+      role: teacher.role as "teacher" | "admin",
+      subjectIds: [] // This will need to be populated from teacher_subjects table
     }));
   }
 
+  // Fetch all subjects from Supabase
   static async fetchSubjects(): Promise<Subject[]> {
     const { data, error } = await supabase
       .from('subjects')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name');
 
     if (error) {
-      console.error("Error fetching subjects:", error);
-      return [];
+      console.error('Error fetching subjects:', error);
+      throw error;
     }
 
-    return data || [];
+    return data.map(subject => ({
+      id: subject.id,
+      name: subject.name,
+      code: subject.code
+    }));
   }
 
+  // Fetch all exams from Supabase
   static async fetchExams(): Promise<Exam[]> {
     const { data, error } = await supabase
       .from('exams')
       .select('*')
-      .order('year', { ascending: false })
-      .order('term', { ascending: false })
       .order('date', { ascending: false });
 
     if (error) {
-      console.error("Error fetching exams:", error);
-      return [];
+      console.error('Error fetching exams:', error);
+      throw error;
     }
 
-    return data || [];
+    return data.map(exam => ({
+      id: exam.id,
+      name: exam.name,
+      type: ensureValidEnum(exam.type, ['TermStart', 'MidTerm', 'EndTerm', 'Custom'] as const, 'Custom'),
+      date: exam.date,
+      form: exam.form,
+      term: exam.term as 1 | 2,
+      year: exam.year
+    }));
   }
 
+  // Fetch all marks from Supabase
   static async fetchMarks(): Promise<Mark[]> {
     const { data, error } = await supabase
       .from('marks')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching marks:", error);
-      return [];
+      console.error('Error fetching marks:', error);
+      throw error;
     }
 
     return data.map(mark => ({
@@ -238,10 +117,11 @@ export class DataService {
       examId: mark.exam_id,
       score: mark.score,
       grade: mark.grade,
-      remarks: mark.remarks
+      remarks: mark.remarks || ''
     }));
   }
 
+  // Fetch all activity logs from Supabase
   static async fetchActivityLogs(): Promise<ActivityLog[]> {
     const { data, error } = await supabase
       .from('activity_logs')
@@ -249,8 +129,8 @@ export class DataService {
       .order('timestamp', { ascending: false });
 
     if (error) {
-      console.error("Error fetching activity logs:", error);
-      return [];
+      console.error('Error fetching activity logs:', error);
+      throw error;
     }
 
     return data.map(log => ({
@@ -262,147 +142,263 @@ export class DataService {
     }));
   }
 
-  // CRUD operations
-  static async addStudent(student: Omit<Student, 'id'>): Promise<Student | null> {
-    const studentData = {
-      id: crypto.randomUUID(),
-      first_name: student.firstName,
-      last_name: student.lastName,
-      admission_number: student.admissionNumber,
-      form: student.form,
-      stream: student.stream,
-      guardian_name: student.guardianName,
-      guardian_phone: student.guardianPhone,
-      image_url: student.imageUrl
-    };
+  // Migrate data from mock data
+  static async migrateAllData(): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Import mock data
+      const { mockStudents, mockTeachers, mockSubjects, mockExams, mockMarks, mockActivityLogs } = await import("@/data/mockData");
 
-    const { data, error } = await supabase
-      .from('students')
-      .insert(studentData)
-      .select()
-      .single();
+      // Migrate students
+      for (const student of mockStudents) {
+        await supabase.from('students').upsert({
+          id: student.id,
+          first_name: student.firstName,
+          last_name: student.lastName,
+          admission_number: student.admissionNumber,
+          form: student.form,
+          stream: ensureValidEnum(student.stream, ['A', 'B', 'C'] as const, 'A'),
+          guardian_name: student.guardianName,
+          guardian_phone: student.guardianPhone,
+          image_url: student.imageUrl
+        });
+      }
 
-    if (error) {
-      console.error("Error adding student:", error);
+      // Migrate teachers
+      for (const teacher of mockTeachers) {
+        await supabase.from('teachers').upsert({
+          id: teacher.id,
+          first_name: teacher.firstName,
+          last_name: teacher.lastName,
+          email: teacher.email,
+          password_hash: teacher.password,
+          role: teacher.role
+        });
+      }
+
+      // Migrate subjects
+      for (const subject of mockSubjects) {
+        await supabase.from('subjects').upsert({
+          id: subject.id,
+          name: subject.name,
+          code: subject.code
+        });
+      }
+
+      // Migrate exams
+      for (const exam of mockExams) {
+        await supabase.from('exams').upsert({
+          id: exam.id,
+          name: exam.name,
+          type: exam.type,
+          date: exam.date,
+          form: exam.form,
+          term: exam.term,
+          year: exam.year
+        });
+      }
+
+      // Migrate marks
+      for (const mark of mockMarks) {
+        await supabase.from('marks').upsert({
+          id: mark.id,
+          student_id: mark.studentId,
+          subject_id: mark.subjectId,
+          exam_id: mark.examId,
+          score: mark.score,
+          grade: mark.grade,
+          remarks: mark.remarks
+        });
+      }
+
+      // Migrate activity logs
+      for (const log of mockActivityLogs) {
+        await supabase.from('activity_logs').upsert({
+          id: log.id,
+          teacher_id: log.teacherId,
+          action: log.action,
+          details: log.details,
+          timestamp: log.timestamp
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Migration error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Add a new student
+  static async addStudent(studentData: Omit<Student, 'id'>): Promise<Student | null> {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .insert({
+          first_name: studentData.firstName,
+          last_name: studentData.lastName,
+          admission_number: studentData.admissionNumber,
+          form: studentData.form,
+          stream: studentData.stream,
+          guardian_name: studentData.guardianName,
+          guardian_phone: studentData.guardianPhone,
+          image_url: studentData.imageUrl
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding student:', error);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        admissionNumber: data.admission_number,
+        form: data.form,
+        stream: data.stream as "A" | "B" | "C",
+        guardianName: data.guardian_name,
+        guardianPhone: data.guardian_phone,
+        imageUrl: data.image_url || '/placeholder.svg'
+      };
+    } catch (error) {
+      console.error('Error adding student:', error);
       return null;
     }
-
-    return {
-      id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      admissionNumber: data.admission_number,
-      form: data.form,
-      stream: data.stream,
-      guardianName: data.guardian_name,
-      guardianPhone: data.guardian_phone,
-      imageUrl: data.image_url
-    };
   }
 
-  static async updateStudent(id: string, student: Partial<Student>): Promise<boolean> {
-    const updateData: any = {};
-    
-    if (student.firstName !== undefined) updateData.first_name = student.firstName;
-    if (student.lastName !== undefined) updateData.last_name = student.lastName;
-    if (student.admissionNumber !== undefined) updateData.admission_number = student.admissionNumber;
-    if (student.form !== undefined) updateData.form = student.form;
-    if (student.stream !== undefined) updateData.stream = student.stream;
-    if (student.guardianName !== undefined) updateData.guardian_name = student.guardianName;
-    if (student.guardianPhone !== undefined) updateData.guardian_phone = student.guardianPhone;
-    if (student.imageUrl !== undefined) updateData.image_url = student.imageUrl;
+  // Add a new teacher
+  static async addTeacher(teacherData: Omit<Teacher, 'id'>): Promise<Teacher | null> {
+    try {
+      const { data, error } = await supabase
+        .from('teachers')
+        .insert({
+          first_name: teacherData.firstName,
+          last_name: teacherData.lastName,
+          email: teacherData.email,
+          password_hash: teacherData.password,
+          role: teacherData.role
+        })
+        .select()
+        .single();
 
-    const { error } = await supabase
-      .from('students')
-      .update(updateData)
-      .eq('id', id);
+      if (error) {
+        console.error('Error adding teacher:', error);
+        return null;
+      }
 
-    if (error) {
-      console.error("Error updating student:", error);
+      return {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: data.email,
+        password: data.password_hash,
+        role: data.role as "teacher" | "admin",
+        subjectIds: []
+      };
+    } catch (error) {
+      console.error('Error adding teacher:', error);
+      return null;
+    }
+  }
+
+  // Update a student
+  static async updateStudent(id: string, studentData: Partial<Student>): Promise<boolean> {
+    try {
+      const updateData: any = {};
+      
+      if (studentData.firstName) updateData.first_name = studentData.firstName;
+      if (studentData.lastName) updateData.last_name = studentData.lastName;
+      if (studentData.admissionNumber) updateData.admission_number = studentData.admissionNumber;
+      if (studentData.form !== undefined) updateData.form = studentData.form;
+      if (studentData.stream) updateData.stream = studentData.stream;
+      if (studentData.guardianName) updateData.guardian_name = studentData.guardianName;
+      if (studentData.guardianPhone) updateData.guardian_phone = studentData.guardianPhone;
+      if (studentData.imageUrl) updateData.image_url = studentData.imageUrl;
+
+      const { error } = await supabase
+        .from('students')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating student:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating student:', error);
       return false;
     }
-
-    return true;
   }
 
+  // Update a teacher
+  static async updateTeacher(id: string, teacherData: Partial<Teacher>): Promise<boolean> {
+    try {
+      const updateData: any = {};
+      
+      if (teacherData.firstName) updateData.first_name = teacherData.firstName;
+      if (teacherData.lastName) updateData.last_name = teacherData.lastName;
+      if (teacherData.email) updateData.email = teacherData.email;
+      if (teacherData.password) updateData.password_hash = teacherData.password;
+      if (teacherData.role) updateData.role = teacherData.role;
+
+      const { error } = await supabase
+        .from('teachers')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating teacher:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating teacher:', error);
+      return false;
+    }
+  }
+
+  // Delete a student
   static async deleteStudent(id: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('students')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.error("Error deleting student:", error);
+      if (error) {
+        console.error('Error deleting student:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting student:', error);
       return false;
     }
-
-    return true;
   }
 
-  static async addTeacher(teacher: Omit<Teacher, 'id'>): Promise<Teacher | null> {
-    const teacherData = {
-      id: crypto.randomUUID(),
-      first_name: teacher.firstName,
-      last_name: teacher.lastName,
-      email: teacher.email,
-      password_hash: teacher.passwordHash,
-      role: teacher.role
-    };
-
-    const { data, error } = await supabase
-      .from('teachers')
-      .insert(teacherData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error adding teacher:", error);
-      return null;
-    }
-
-    return {
-      id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      email: data.email,
-      passwordHash: data.password_hash,
-      role: data.role as 'teacher' | 'admin'
-    };
-  }
-
-  static async updateTeacher(id: string, teacher: Partial<Teacher>): Promise<boolean> {
-    const updateData: any = {};
-    
-    if (teacher.firstName !== undefined) updateData.first_name = teacher.firstName;
-    if (teacher.lastName !== undefined) updateData.last_name = teacher.lastName;
-    if (teacher.email !== undefined) updateData.email = teacher.email;
-    if (teacher.passwordHash !== undefined) updateData.password_hash = teacher.passwordHash;
-    if (teacher.role !== undefined) updateData.role = teacher.role;
-
-    const { error } = await supabase
-      .from('teachers')
-      .update(updateData)
-      .eq('id', id);
-
-    if (error) {
-      console.error("Error updating teacher:", error);
-      return false;
-    }
-
-    return true;
-  }
-
+  // Delete a teacher
   static async deleteTeacher(id: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('teachers')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('teachers')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      console.error("Error deleting teacher:", error);
+      if (error) {
+        console.error('Error deleting teacher:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting teacher:', error);
       return false;
     }
-
-    return true;
   }
 }

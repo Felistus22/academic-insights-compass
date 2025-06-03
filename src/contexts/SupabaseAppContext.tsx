@@ -156,7 +156,7 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
 
   // Authentication functions
   const login = async (email: string, password: string): Promise<boolean> => {
-    const teacher = teachers.find(t => t.email === email && t.passwordHash === password);
+    const teacher = teachers.find(t => t.email === email && t.password === password);
     if (teacher) {
       setCurrentTeacher(teacher);
       toast.success("Login successful!");

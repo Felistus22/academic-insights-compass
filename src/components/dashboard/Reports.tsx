@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Student } from "@/types";
 
 const Reports: React.FC = () => {
-  const { students, subjects, exams, marks } = useAppContext();
+  const { students, subjects, exams, marks } = useSupabaseAppContext();
   
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [selectedForm, setSelectedForm] = useState<string>("1");
