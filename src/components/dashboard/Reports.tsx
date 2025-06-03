@@ -16,7 +16,7 @@ import FormReport from "./reports/FormReport";
 import { Separator } from "@/components/ui/separator";
 import { FileText, MessageSquare, Share, Phone, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Student } from "@/types";
+import { Student, ReportType } from "@/types";
 
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useAppContext();
@@ -790,11 +790,13 @@ const Reports: React.FC = () => {
               </CardContent>
             </Card>
             
-            <FormReport
-              form={parseInt(selectedForm)}
-              year={parseInt(selectedYear)}
-              term={parseInt(selectedTerm) as 1 | 2}
-            />
+            <div id="form-report">
+              <FormReport
+                form={parseInt(selectedForm)}
+                year={parseInt(selectedYear)}
+                term={parseInt(selectedTerm) as 1 | 2}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -806,9 +808,21 @@ const Reports: React.FC = () => {
       case 'overview':
         return renderOverview();
       case 'student':
-        return <StudentReportCard />;
+        return (
+          <StudentReportCard
+            studentId={selectedStudent}
+            year={parseInt(selectedYear)}
+            term={parseInt(selectedTerm) as 1 | 2}
+          />
+        );
       case 'form':
-        return <FormReport />;
+        return (
+          <FormReport
+            form={parseInt(selectedForm)}
+            year={parseInt(selectedYear)}
+            term={parseInt(selectedTerm) as 1 | 2}
+          />
+        );
       default:
         return renderOverview();
     }

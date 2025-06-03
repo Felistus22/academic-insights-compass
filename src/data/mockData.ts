@@ -1,4 +1,3 @@
-
 import { Student, Subject, Exam, Mark, Teacher, ActivityLog } from "../types";
 
 export const subjects: Subject[] = [
@@ -175,7 +174,7 @@ export const teachers: Teacher[] = [
     firstName: "Thomas",
     lastName: "Anderson",
     email: "t.anderson@school.edu",
-    password: "password123", // In a real app, this would be hashed
+    passwordHash: "password123", // In a real app, this would be hashed
     subjectIds: ["subj1", "subj3"],
     role: "teacher"
   },
@@ -184,7 +183,7 @@ export const teachers: Teacher[] = [
     firstName: "Jane",
     lastName: "Doe",
     email: "j.doe@school.edu",
-    password: "password123", // In a real app, this would be hashed
+    passwordHash: "password123", // In a real app, this would be hashed
     subjectIds: ["subj2", "subj6"],
     role: "teacher"
   },
@@ -193,7 +192,7 @@ export const teachers: Teacher[] = [
     firstName: "Principal",
     lastName: "Smith",
     email: "principal@school.edu",
-    password: "admin123", // In a real app, this would be hashed
+    passwordHash: "admin123", // In a real app, this would be hashed
     subjectIds: [],
     role: "admin"
   },

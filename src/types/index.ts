@@ -1,5 +1,6 @@
 
 
+
 export interface Student {
   id: string;
   firstName: string;
@@ -56,7 +57,7 @@ export interface ActivityLog {
   timestamp: string;
 }
 
-export type ReportType = 'form' | 'student';
+export type ReportType = 'form' | 'student' | 'overview';
 
 export interface StudentReportCardProps {
   studentId: string;
