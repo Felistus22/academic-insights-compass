@@ -1,6 +1,6 @@
 
 import React, { useMemo } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -16,7 +16,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
   year,
   term,
 }) => {
-  const { students, subjects, exams, marks } = useAppContext();
+  const { students, subjects, exams, marks } = useSupabaseAppContext();
 
   const student = useMemo(() => {
     return students.find(s => s.id === studentId);

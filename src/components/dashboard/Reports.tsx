@@ -18,6 +18,8 @@ import { FileText, MessageSquare, Share, Phone, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Student } from "@/types";
 
+type ReportType = 'overview' | 'student' | 'form';
+
 const Reports: React.FC = () => {
   const { students, subjects, exams, marks } = useSupabaseAppContext();
   
@@ -563,7 +565,6 @@ const Reports: React.FC = () => {
               </CardContent>
             </Card>
             
-            {/* Batch Operations Card */}
             <Card>
               <CardHeader>
                 <CardTitle>Batch Report Operations</CardTitle>
@@ -806,9 +807,21 @@ const Reports: React.FC = () => {
       case 'overview':
         return renderOverview();
       case 'student':
-        return <StudentReportCard />;
+        return (
+          <StudentReportCard
+            studentId={selectedStudent}
+            year={parseInt(selectedYear)}
+            term={parseInt(selectedTerm) as 1 | 2}
+          />
+        );
       case 'form':
-        return <FormReport />;
+        return (
+          <FormReport
+            form={parseInt(selectedForm)}
+            year={parseInt(selectedYear)}
+            term={parseInt(selectedTerm) as 1 | 2}
+          />
+        );
       default:
         return renderOverview();
     }
