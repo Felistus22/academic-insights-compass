@@ -41,7 +41,12 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
   const form = useForm<TeacherFormValues>({
     resolver: zodResolver(teacherSchema),
     defaultValues: teacher ? { 
-      ...teacher,
+      firstName: teacher.firstName,
+      lastName: teacher.lastName,
+      email: teacher.email,
+      password: "", // Always start with empty password for editing
+      role: teacher.role,
+      subjectIds: teacher.subjectIds,
     } : {
       firstName: "",
       lastName: "",
@@ -53,12 +58,12 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
   });
 
   const onSubmit = (data: TeacherFormValues) => {
-    // Fix: Create a properly typed teacher object with all required fields
+    // Create a properly typed teacher object with all required fields
     const teacherData: Omit<Teacher, "id"> = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
-      password: data.password,
+      passwordHash: data.password, // Convert password to passwordHash
       role: data.role,
       subjectIds: selectedSubjects
     };
@@ -66,7 +71,11 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
     if (isEditing && teacher) {
       updateTeacher({
         ...teacher,
-        ...data,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        passwordHash: data.password ? data.password : teacher.passwordHash, // Only update if password provided
+        role: data.role,
         subjectIds: selectedSubjects
       });
     } else {

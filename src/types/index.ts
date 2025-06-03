@@ -1,4 +1,5 @@
 
+
 export interface Student {
   id: string;
   firstName: string;
@@ -43,6 +44,7 @@ export interface Teacher {
   lastName: string;
   email: string;
   passwordHash: string; // Changed from password to passwordHash to match database
+  subjectIds: string[]; // Added back the missing subjectIds property
   role: "teacher" | "admin";
 }
 
@@ -58,6 +60,12 @@ export type ReportType = 'form' | 'student';
 
 export interface StudentReportCardProps {
   studentId: string;
+  year: number;
+  term: 1 | 2;
+}
+
+export interface FormReportProps {
+  form: number;
   year: number;
   term: 1 | 2;
 }

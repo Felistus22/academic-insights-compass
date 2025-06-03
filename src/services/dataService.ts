@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
@@ -189,7 +188,12 @@ export class DataService {
   static async fetchTeachers(): Promise<Teacher[]> {
     const { data, error } = await supabase
       .from('teachers')
-      .select('*')
+      .select(`
+        *,
+        teacher_subjects (
+          subject_id
+        )
+      `)
       .order('first_name', { ascending: true });
 
     if (error) {
@@ -203,7 +207,8 @@ export class DataService {
       lastName: teacher.last_name,
       email: teacher.email,
       passwordHash: teacher.password_hash,
-      role: teacher.role as 'teacher' | 'admin'
+      role: teacher.role as 'teacher' | 'admin',
+      subjectIds: teacher.teacher_subjects?.map((ts: any) => ts.subject_id) || []
     }));
   }
 
@@ -384,13 +389,30 @@ export class DataService {
       return null;
     }
 
+    // Handle teacher subjects
+    if (teacher.subjectIds && teacher.subjectIds.length > 0) {
+      const teacherSubjectsData = teacher.subjectIds.map(subjectId => ({
+        teacher_id: data.id,
+        subject_id: subjectId
+      }));
+
+      const { error: subjectError } = await supabase
+        .from('teacher_subjects')
+        .insert(teacherSubjectsData);
+
+      if (subjectError) {
+        console.error("Error adding teacher subjects:", subjectError);
+      }
+    }
+
     return {
       id: data.id,
       firstName: data.first_name,
       lastName: data.last_name,
       email: data.email,
       passwordHash: data.password_hash,
-      role: data.role as 'teacher' | 'admin'
+      role: data.role as 'teacher' | 'admin',
+      subjectIds: teacher.subjectIds || []
     };
   }
 
@@ -411,6 +433,31 @@ export class DataService {
     if (error) {
       console.error("Error updating teacher:", error);
       return false;
+    }
+
+    // Handle teacher subjects update
+    if (teacher.subjectIds !== undefined) {
+      // Delete existing teacher subjects
+      await supabase
+        .from('teacher_subjects')
+        .delete()
+        .eq('teacher_id', id);
+
+      // Insert new teacher subjects
+      if (teacher.subjectIds.length > 0) {
+        const teacherSubjectsData = teacher.subjectIds.map(subjectId => ({
+          teacher_id: id,
+          subject_id: subjectId
+        }));
+
+        const { error: subjectError } = await supabase
+          .from('teacher_subjects')
+          .insert(teacherSubjectsData);
+
+        if (subjectError) {
+          console.error("Error updating teacher subjects:", subjectError);
+        }
+      }
     }
 
     return true;
