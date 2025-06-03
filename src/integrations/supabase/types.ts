@@ -9,7 +9,261 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: string
+          id: string
+          teacher_id: string
+          timestamp: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details: string
+          id: string
+          teacher_id: string
+          timestamp: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: string
+          id?: string
+          teacher_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          created_at: string | null
+          date: string
+          form: number
+          id: string
+          name: string
+          term: number
+          type: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          form: number
+          id: string
+          name: string
+          term: number
+          type: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          form?: number
+          id?: string
+          name?: string
+          term?: number
+          type?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      marks: {
+        Row: {
+          created_at: string | null
+          exam_id: string
+          grade: string
+          id: string
+          remarks: string | null
+          score: number
+          student_id: string
+          subject_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_id: string
+          grade: string
+          id: string
+          remarks?: string | null
+          score: number
+          student_id: string
+          subject_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_id?: string
+          grade?: string
+          id?: string
+          remarks?: string | null
+          score?: number
+          student_id?: string
+          subject_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          admission_number: string
+          created_at: string | null
+          first_name: string
+          form: number
+          guardian_name: string
+          guardian_phone: string
+          id: string
+          image_url: string | null
+          last_name: string
+          stream: string
+          updated_at: string | null
+        }
+        Insert: {
+          admission_number: string
+          created_at?: string | null
+          first_name: string
+          form: number
+          guardian_name: string
+          guardian_phone: string
+          id: string
+          image_url?: string | null
+          last_name: string
+          stream: string
+          updated_at?: string | null
+        }
+        Update: {
+          admission_number?: string
+          created_at?: string | null
+          first_name?: string
+          form?: number
+          guardian_name?: string
+          guardian_phone?: string
+          id?: string
+          image_url?: string | null
+          last_name?: string
+          stream?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          code: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          id: string
+          name: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      teacher_subjects: {
+        Row: {
+          created_at: string | null
+          id: string
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          created_at: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          password_hash: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          password_hash: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          password_hash?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

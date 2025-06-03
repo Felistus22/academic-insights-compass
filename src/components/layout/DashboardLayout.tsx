@@ -1,302 +1,186 @@
-import React, { ReactNode } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+
+import React, { useState } from "react";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Image } from "@/components/ui/image";
+import { 
+  Home, 
+  Users, 
+  GraduationCap, 
+  BookOpen, 
+  ClipboardList, 
+  FileText, 
+  Settings, 
+  LogOut,
+  Menu,
+  X
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface SidebarItem {
-  name: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  active: boolean;
-}
+// Import dashboard components
+import DashboardHome from "../dashboard/DashboardHome";
+import Students from "../dashboard/Students";
+import ManageStudents from "../dashboard/ManageStudents";
+import ManageTeachers from "../dashboard/ManageTeachers";
+import ManageSubjects from "../dashboard/ManageSubjects";
+import EnterMarks from "../dashboard/EnterMarks";
+import Reports from "../dashboard/Reports";
+import ActivityLogs from "../dashboard/ActivityLogs";
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-  activePage: string;
-  onNavigate: (page: string) => void;
-}
+type TabKey = 'home' | 'students' | 'manage-students' | 'manage-teachers' | 'manage-subjects' | 'enter-marks' | 'reports' | 'activity-logs';
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  children,
-  activePage,
-  onNavigate,
-}) => {
-  const { currentTeacher, logout } = useAppContext();
+const DashboardLayout: React.FC = () => {
+  const { currentTeacher, logout } = useSupabaseAppContext();
+  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!currentTeacher) {
-    return <div>Unauthorized</div>;
+    return null;
   }
 
-  const navItems: SidebarItem[] = [
-    {
-      name: "Dashboard",
-      icon: (
-        <img 
-            src="/lovable-uploads/40c13983-fd2d-4a30-b15f-2fde2ace8f2f.png" 
-            alt="Dashboard Icon" 
-            className="w-6 h-6"
-        />
-      ),
-      onClick: () => onNavigate("dashboard"),
-      active: activePage === "dashboard",
-    },
-    {
-      name: "Students",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      onClick: () => onNavigate("students"),
-      active: activePage === "students",
-    },
-    {
-      name: "Enter Marks",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
-        </svg>
-      ),
-      onClick: () => onNavigate("enterMarks"),
-      active: activePage === "enterMarks",
-    },
-    {
-      name: "Reports",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <path d="M14 2v6h6" />
-          <path d="M16 13H8" />
-          <path d="M16 17H8" />
-          <path d="M10 9H8" />
-        </svg>
-      ),
-      onClick: () => onNavigate("reports"),
-      active: activePage === "reports",
-    },
-  ];
+  const menuItems = [
+    { key: 'home' as TabKey, label: 'Dashboard', icon: Home, adminOnly: false },
+    { key: 'students' as TabKey, label: 'Students', icon: Users, adminOnly: false },
+    { key: 'manage-students' as TabKey, label: 'Manage Students', icon: Users, adminOnly: true },
+    { key: 'manage-teachers' as TabKey, label: 'Manage Teachers', icon: GraduationCap, adminOnly: true },
+    { key: 'manage-subjects' as TabKey, label: 'Manage Subjects', icon: BookOpen, adminOnly: true },
+    { key: 'enter-marks' as TabKey, label: 'Enter Marks', icon: ClipboardList, adminOnly: false },
+    { key: 'reports' as TabKey, label: 'Reports', icon: FileText, adminOnly: false },
+    { key: 'activity-logs' as TabKey, label: 'Activity Logs', icon: Settings, adminOnly: true },
+  ].filter(item => !item.adminOnly || currentTeacher.role === 'admin');
 
-  // Add admin-only items
-  if (currentTeacher.role === "admin") {
-    // Add manage students menu item
-    navItems.push({
-      name: "Manage Students",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          <line x1="17" y1="8" x2="22" y2="8" />
-          <line x1="19.5" y1="5.5" x2="19.5" y2="10.5" />
-        </svg>
-      ),
-      onClick: () => onNavigate("manageStudents"),
-      active: activePage === "manageStudents",
-    });
-    
-    // Add manage teachers menu item
-    navItems.push({
-      name: "Manage Teachers",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-4" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      onClick: () => onNavigate("manageTeachers"),
-      active: activePage === "manageTeachers",
-    });
-    
-    // Add manage subjects menu item
-    navItems.push({
-      name: "Manage Subjects",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
-      ),
-      onClick: () => onNavigate("manageSubjects"),
-      active: activePage === "manageSubjects",
-    });
-    
-    // Add activity logs menu item
-    navItems.push({
-      name: "Activity Logs",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 8v4l3 3" />
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-      ),
-      onClick: () => onNavigate("activityLogs"),
-      active: activePage === "activityLogs",
-    });
-  }
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return <DashboardHome />;
+      case 'students':
+        return <Students />;
+      case 'manage-students':
+        return <ManageStudents />;
+      case 'manage-teachers':
+        return <ManageTeachers />;
+      case 'manage-subjects':
+        return <ManageSubjects />;
+      case 'enter-marks':
+        return <EnterMarks />;
+      case 'reports':
+        return <Reports />;
+      case 'activity-logs':
+        return <ActivityLogs />;
+      default:
+        return <DashboardHome />;
+    }
+  };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md">
-        <div className="p-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="bg-education-primary p-2 rounded-md flex items-center justify-center">
-              <img 
-                src="/lovable-uploads/40c13983-fd2d-4a30-b15f-2fde2ace8f2f.png" 
-                alt="School Logo" 
-                className="w-6 h-6"
-              />
-            </div>
-            <h1 className="text-xl font-bold">Padre Pio ReportCard System</h1>
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
+            <GraduationCap className="h-8 w-8 text-education-primary" />
+            <span className="text-xl font-bold text-gray-900">SchoolMS</span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <Separator />
-
-        <ScrollArea className="h-[calc(100vh-180px)]">
-          <div className="p-4 space-y-2">
-            {navItems.map((item) => (
-              <Button
-                key={item.name}
-                variant={item.active ? "default" : "ghost"}
-                className={`w-full justify-start ${
-                  item.active
-                    ? "bg-education-primary hover:bg-education-dark"
-                    : ""
-                }`}
-                onClick={item.onClick}
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                onClick={() => {
+                  setActiveTab(item.key);
+                  setSidebarOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors",
+                  activeTab === item.key
+                    ? "bg-education-primary text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
               >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-              </Button>
-            ))}
-          </div>
-        </ScrollArea>
+                <Icon className="h-5 w-5" />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-        <div className="absolute bottom-0 w-64 bg-white border-t border-gray-200 p-4">
-          <div className="flex items-center mb-4">
-            <Avatar className="h-10 w-10 mr-2">
-              <AvatarFallback className="bg-education-primary text-white">
-                {`${currentTeacher.firstName[0]}${currentTeacher.lastName[0]}`}
-              </AvatarFallback>
-            </Avatar>
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-education-primary rounded-full flex items-center justify-center">
+              <span className="text-white font-medium">
+                {currentTeacher.firstName[0]}{currentTeacher.lastName[0]}
+              </span>
+            </div>
             <div>
-              <p className="text-sm font-medium">{`${currentTeacher.firstName} ${currentTeacher.lastName}`}</p>
-              <p className="text-xs text-gray-500">
-                {currentTeacher.role === "admin" ? "Administrator" : "Teacher"}
+              <p className="font-medium text-gray-900">
+                {currentTeacher.firstName} {currentTeacher.lastName}
+              </p>
+              <p className="text-sm text-gray-500 capitalize">
+                {currentTeacher.role}
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="w-full"
+          <Button 
+            variant="outline" 
+            className="w-full" 
             onClick={logout}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mr-2"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Log Out
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
           </Button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4">
-          {children}
+        {/* Top bar */}
+        <header className="h-16 bg-white shadow-sm border-b border-gray-200 flex items-center justify-between px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          <div className="hidden lg:block">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {menuItems.find(item => item.key === activeTab)?.label}
+            </h1>
+          </div>
+          
+          <div className="lg:hidden">
+            <span className="text-lg font-semibold text-gray-900">
+              {menuItems.find(item => item.key === activeTab)?.label}
+            </span>
+          </div>
+        </header>
+
+        {/* Content area */}
+        <main className="flex-1 overflow-auto p-6">
+          {renderContent()}
         </main>
       </div>
     </div>

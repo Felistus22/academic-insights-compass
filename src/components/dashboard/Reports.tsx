@@ -29,6 +29,7 @@ const Reports: React.FC = () => {
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [activeReport, setActiveReport] = useState<ReportType>('overview');
   
   // Phone number for sending messages
   const senderPhoneNumber = "+255697127596";
@@ -390,411 +391,432 @@ const Reports: React.FC = () => {
     return "E";
   };
   
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
-        <p className="text-muted-foreground">
-          Generate and view performance reports
-        </p>
-      </div>
-      
-      <Tabs defaultValue="student" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="student">Student Report Card</TabsTrigger>
-          <TabsTrigger value="form">Form Performance</TabsTrigger>
-        </TabsList>
+  const renderOverview = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
+          <p className="text-muted-foreground">
+            Generate and view performance reports
+          </p>
+        </div>
         
-        <TabsContent value="student" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Student</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="student">Student</Label>
-                  <Select
-                    value={selectedStudent}
-                    onValueChange={setSelectedStudent}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredStudents.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.firstName} {student.lastName} - Form {student.form}{student.stream ? ` ${student.stream}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        <Tabs defaultValue="student" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="student">Student Report Card</TabsTrigger>
+            <TabsTrigger value="form">Form Performance</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="student" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Student</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="student">Student</Label>
+                    <Select
+                      value={selectedStudent}
+                      onValueChange={setSelectedStudent}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredStudents.map((student) => (
+                          <SelectItem key={student.id} value={student.id}>
+                            {student.firstName} {student.lastName} - Form {student.form}{student.stream ? ` ${student.stream}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="form">Form</Label>
+                    <Select
+                      value={selectedForm}
+                      onValueChange={setSelectedForm}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Form" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Forms</SelectItem>
+                        <SelectItem value="1">Form 1</SelectItem>
+                        <SelectItem value="2">Form 2</SelectItem>
+                        <SelectItem value="3">Form 3</SelectItem>
+                        <SelectItem value="4">Form 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="stream">Stream</Label>
+                    <Select
+                      value={selectedStream}
+                      onValueChange={setSelectedStream}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Stream" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Streams</SelectItem>
+                        <SelectItem value="A">Stream A</SelectItem>
+                        <SelectItem value="B">Stream B</SelectItem>
+                        <SelectItem value="C">Stream C</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Academic Year</Label>
+                    <Select
+                      value={selectedYear}
+                      onValueChange={setSelectedYear}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="term">Term</Label>
+                    <Select
+                      value={selectedTerm}
+                      onValueChange={setSelectedTerm}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Term" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Term 1</SelectItem>
+                        <SelectItem value="2">Term 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="form">Form</Label>
-                  <Select
-                    value={selectedForm}
-                    onValueChange={setSelectedForm}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Form" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Forms</SelectItem>
-                      <SelectItem value="1">Form 1</SelectItem>
-                      <SelectItem value="2">Form 2</SelectItem>
-                      <SelectItem value="3">Form 3</SelectItem>
-                      <SelectItem value="4">Form 4</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {selectedStudent ? (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Button onClick={() => generateStudentPDF()}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => sendSMS(selectedStudent)}
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Send SMS to Guardian ({senderPhoneNumber})
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => shareViaWhatsApp(selectedStudent)}
+                      className="bg-green-500 text-white hover:bg-green-600 border-0"
+                    >
+                      <Share className="mr-2 h-4 w-4" />
+                      Share via WhatsApp ({senderPhoneNumber})
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      To view an individual student report, select a student from the dropdown above.
+                    </p>
+                  </div>
+                )}
                 
-                <div className="space-y-2">
-                  <Label htmlFor="stream">Stream</Label>
-                  <Select
-                    value={selectedStream}
-                    onValueChange={setSelectedStream}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Streams</SelectItem>
-                      <SelectItem value="A">Stream A</SelectItem>
-                      <SelectItem value="B">Stream B</SelectItem>
-                      <SelectItem value="C">Stream C</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {generatedPdfUrl && (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">PDF ready for sharing:</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          if (generatedPdfUrl) {
+                            window.open(generatedPdfUrl, '_blank');
+                          }
+                        }}
+                      >
+                        Open PDF
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setGeneratedPdfUrl(null)}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Batch Operations Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Batch Report Operations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      Select students to perform batch operations
+                    </p>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={selectAllStudents}
+                      >
+                        Select All
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={deselectAllStudents}
+                      >
+                        Deselect All
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto border rounded-md">
+                    <table className="w-full">
+                      <thead className="bg-muted sticky top-0">
+                        <tr>
+                          <th className="w-12 p-2 text-center">
+                            <Checkbox 
+                              checked={
+                                filteredStudents.length > 0 && 
+                                selectedStudentIds.length === filteredStudents.length
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  selectAllStudents();
+                                } else {
+                                  deselectAllStudents();
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="p-2 text-left">Name</th>
+                          <th className="p-2 text-left">Admission No.</th>
+                          <th className="p-2 text-left">Form</th>
+                          <th className="p-2 text-left">Guardian</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredStudents.length > 0 ? (
+                          filteredStudents.map(student => (
+                            <tr key={student.id} className="border-t hover:bg-muted/50">
+                              <td className="p-2 text-center">
+                                <Checkbox
+                                  checked={selectedStudentIds.includes(student.id)}
+                                  onCheckedChange={() => toggleStudentSelection(student.id)}
+                                />
+                              </td>
+                              <td className="p-2">{student.firstName} {student.lastName}</td>
+                              <td className="p-2">{student.admissionNumber}</td>
+                              <td className="p-2">Form {student.form}{student.stream ? ` ${student.stream}` : ''}</td>
+                              <td className="p-2">{student.guardianName}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                              No students match the selected criteria
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {selectedStudentIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <p className="w-full text-sm">
+                        {selectedStudentIds.length} student(s) selected
+                      </p>
+                      <Button 
+                        onClick={sendBatchSMS}
+                        disabled={isSending}
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Send {selectedStudentIds.length} SMS Reports ({senderPhoneNumber})
+                      </Button>
+                      <Button 
+                        className="bg-green-500 text-white hover:bg-green-600 border-0"
+                        onClick={shareBatchViaWhatsApp}
+                        disabled={isSending}
+                      >
+                        <Share className="mr-2 h-4 w-4" />
+                        Share {selectedStudentIds.length} Reports via WhatsApp ({senderPhoneNumber})
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="year">Academic Year</Label>
-                  <Select
-                    value={selectedYear}
-                    onValueChange={setSelectedYear}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableYears.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="term">Term</Label>
-                  <Select
-                    value={selectedTerm}
-                    onValueChange={setSelectedTerm}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Term" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Term 1</SelectItem>
-                      <SelectItem value="2">Term 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </CardContent>
+            </Card>
+            
+            {selectedStudent && (
+              <div id="student-report-main">
+                <StudentReportCard
+                  studentId={selectedStudent}
+                  year={parseInt(selectedYear)}
+                  term={parseInt(selectedTerm) as 1 | 2}
+                />
               </div>
-              
-              {selectedStudent ? (
+            )}
+            
+            {/* Hidden report cards for batch operations */}
+            <div className="hidden">
+              {selectedStudentIds.map((studentId) => (
+                <div key={studentId} id={`student-report-${studentId}`}>
+                  <StudentReportCard
+                    studentId={studentId}
+                    year={parseInt(selectedYear)}
+                    term={parseInt(selectedTerm) as 1 | 2}
+                  />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="form" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Form and Term</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="form">Form</Label>
+                    <Select
+                      value={selectedForm}
+                      onValueChange={setSelectedForm}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Form" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Form 1</SelectItem>
+                        <SelectItem value="2">Form 2</SelectItem>
+                        <SelectItem value="3">Form 3</SelectItem>
+                        <SelectItem value="4">Form 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="stream">Stream</Label>
+                    <Select
+                      value={selectedStream}
+                      onValueChange={setSelectedStream}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Stream" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Streams</SelectItem>
+                        <SelectItem value="A">Stream A</SelectItem>
+                        <SelectItem value="B">Stream B</SelectItem>
+                        <SelectItem value="C">Stream C</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Academic Year</Label>
+                    <Select
+                      value={selectedYear}
+                      onValueChange={setSelectedYear}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="term">Term</Label>
+                    <Select
+                      value={selectedTerm}
+                      onValueChange={setSelectedTerm}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Term" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Term 1</SelectItem>
+                        <SelectItem value="2">Term 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
                 <div className="flex flex-wrap gap-2 mt-4">
-                  <Button onClick={() => generateStudentPDF()}>
+                  <Button onClick={generateFormPDF}>
                     <FileText className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => sendSMS(selectedStudent)}
+                    onClick={sendBatchSMS}
+                    disabled={isSending}
                   >
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Send SMS to Guardian ({senderPhoneNumber})
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => shareViaWhatsApp(selectedStudent)}
-                    className="bg-green-500 text-white hover:bg-green-600 border-0"
-                  >
-                    <Share className="mr-2 h-4 w-4" />
-                    Share via WhatsApp ({senderPhoneNumber})
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Reports to All Form {selectedForm} Guardians
                   </Button>
                 </div>
-              ) : (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    To view an individual student report, select a student from the dropdown above.
-                  </p>
-                </div>
-              )}
-              
-              {generatedPdfUrl && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">PDF ready for sharing:</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        if (generatedPdfUrl) {
-                          window.open(generatedPdfUrl, '_blank');
-                        }
-                      }}
-                    >
-                      Open PDF
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setGeneratedPdfUrl(null)}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          {/* Batch Operations Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Batch Report Operations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-muted-foreground">
-                    Select students to perform batch operations
-                  </p>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={selectAllStudents}
-                    >
-                      Select All
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={deselectAllStudents}
-                    >
-                      Deselect All
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="max-h-60 overflow-y-auto border rounded-md">
-                  <table className="w-full">
-                    <thead className="bg-muted sticky top-0">
-                      <tr>
-                        <th className="w-12 p-2 text-center">
-                          <Checkbox 
-                            checked={
-                              filteredStudents.length > 0 && 
-                              selectedStudentIds.length === filteredStudents.length
-                            }
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                selectAllStudents();
-                              } else {
-                                deselectAllStudents();
-                              }
-                            }}
-                          />
-                        </th>
-                        <th className="p-2 text-left">Name</th>
-                        <th className="p-2 text-left">Admission No.</th>
-                        <th className="p-2 text-left">Form</th>
-                        <th className="p-2 text-left">Guardian</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredStudents.length > 0 ? (
-                        filteredStudents.map(student => (
-                          <tr key={student.id} className="border-t hover:bg-muted/50">
-                            <td className="p-2 text-center">
-                              <Checkbox
-                                checked={selectedStudentIds.includes(student.id)}
-                                onCheckedChange={() => toggleStudentSelection(student.id)}
-                              />
-                            </td>
-                            <td className="p-2">{student.firstName} {student.lastName}</td>
-                            <td className="p-2">{student.admissionNumber}</td>
-                            <td className="p-2">Form {student.form}{student.stream ? ` ${student.stream}` : ''}</td>
-                            <td className="p-2">{student.guardianName}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                            No students match the selected criteria
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {selectedStudentIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <p className="w-full text-sm">
-                      {selectedStudentIds.length} student(s) selected
-                    </p>
-                    <Button 
-                      onClick={sendBatchSMS}
-                      disabled={isSending}
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Send {selectedStudentIds.length} SMS Reports ({senderPhoneNumber})
-                    </Button>
-                    <Button 
-                      className="bg-green-500 text-white hover:bg-green-600 border-0"
-                      onClick={shareBatchViaWhatsApp}
-                      disabled={isSending}
-                    >
-                      <Share className="mr-2 h-4 w-4" />
-                      Share {selectedStudentIds.length} Reports via WhatsApp ({senderPhoneNumber})
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          {selectedStudent && (
-            <div id="student-report-main">
-              <StudentReportCard
-                studentId={selectedStudent}
-                year={parseInt(selectedYear)}
-                term={parseInt(selectedTerm) as 1 | 2}
-              />
-            </div>
-          )}
-          
-          {/* Hidden report cards for batch operations */}
-          <div className="hidden">
-            {selectedStudentIds.map((studentId) => (
-              <div key={studentId} id={`student-report-${studentId}`}>
-                <StudentReportCard
-                  studentId={studentId}
-                  year={parseInt(selectedYear)}
-                  term={parseInt(selectedTerm) as 1 | 2}
-                />
-              </div>
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="form" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Form and Term</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="form">Form</Label>
-                  <Select
-                    value={selectedForm}
-                    onValueChange={setSelectedForm}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Form" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Form 1</SelectItem>
-                      <SelectItem value="2">Form 2</SelectItem>
-                      <SelectItem value="3">Form 3</SelectItem>
-                      <SelectItem value="4">Form 4</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="stream">Stream</Label>
-                  <Select
-                    value={selectedStream}
-                    onValueChange={setSelectedStream}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Streams</SelectItem>
-                      <SelectItem value="A">Stream A</SelectItem>
-                      <SelectItem value="B">Stream B</SelectItem>
-                      <SelectItem value="C">Stream C</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="year">Academic Year</Label>
-                  <Select
-                    value={selectedYear}
-                    onValueChange={setSelectedYear}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableYears.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="term">Term</Label>
-                  <Select
-                    value={selectedTerm}
-                    onValueChange={setSelectedTerm}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Term" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Term 1</SelectItem>
-                      <SelectItem value="2">Term 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Button onClick={generateFormPDF}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Download PDF
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={sendBatchSMS}
-                  disabled={isSending}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Reports to All Form {selectedForm} Guardians
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <FormReport
-            form={parseInt(selectedForm)}
-            year={parseInt(selectedYear)}
-            term={parseInt(selectedTerm) as 1 | 2}
-          />
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+            
+            <FormReport
+              form={parseInt(selectedForm)}
+              year={parseInt(selectedYear)}
+              term={parseInt(selectedTerm) as 1 | 2}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeReport) {
+      case 'overview':
+        return renderOverview();
+      case 'student':
+        return <StudentReportCard />;
+      case 'form':
+        return <FormReport />;
+      default:
+        return renderOverview();
+    }
+  };
+
+  return (
+    <div>
+      {renderContent()}
     </div>
   );
 };
