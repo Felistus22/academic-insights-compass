@@ -42,8 +42,7 @@ export interface Teacher {
   firstName: string;
   lastName: string;
   email: string;
-  password: string; // In a real app, this would be hashed
-  subjectIds: string[];
+  passwordHash: string; // Changed from password to passwordHash to match database
   role: "teacher" | "admin";
 }
 
@@ -53,4 +52,12 @@ export interface ActivityLog {
   action: string;
   details: string;
   timestamp: string;
+}
+
+export type ReportType = 'form' | 'student';
+
+export interface StudentReportCardProps {
+  studentId: string;
+  year: number;
+  term: 1 | 2;
 }

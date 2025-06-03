@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
@@ -178,7 +179,7 @@ export class DataService {
       lastName: student.last_name,
       admissionNumber: student.admission_number,
       form: student.form,
-      stream: student.stream,
+      stream: student.stream as "A" | "B" | "C",
       guardianName: student.guardian_name,
       guardianPhone: student.guardian_phone,
       imageUrl: student.image_url
@@ -233,7 +234,15 @@ export class DataService {
       return [];
     }
 
-    return data || [];
+    return data.map(exam => ({
+      id: exam.id,
+      name: exam.name,
+      type: exam.type as "TermStart" | "MidTerm" | "EndTerm" | "Custom",
+      term: exam.term as 1 | 2,
+      year: exam.year,
+      form: exam.form,
+      date: exam.date
+    }));
   }
 
   static async fetchMarks(): Promise<Mark[]> {
@@ -308,7 +317,7 @@ export class DataService {
       lastName: data.last_name,
       admissionNumber: data.admission_number,
       form: data.form,
-      stream: data.stream,
+      stream: data.stream as "A" | "B" | "C",
       guardianName: data.guardian_name,
       guardianPhone: data.guardian_phone,
       imageUrl: data.image_url
