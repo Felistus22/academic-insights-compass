@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
+import { useAppContext } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,10 +18,8 @@ import { FileText, MessageSquare, Share, Phone, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Student } from "@/types";
 
-type ReportType = 'overview' | 'student' | 'form';
-
 const Reports: React.FC = () => {
-  const { students, subjects, exams, marks } = useSupabaseAppContext();
+  const { students, subjects, exams, marks } = useAppContext();
   
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [selectedForm, setSelectedForm] = useState<string>("1");
@@ -565,6 +563,7 @@ const Reports: React.FC = () => {
               </CardContent>
             </Card>
             
+            {/* Batch Operations Card */}
             <Card>
               <CardHeader>
                 <CardTitle>Batch Report Operations</CardTitle>
@@ -807,21 +806,9 @@ const Reports: React.FC = () => {
       case 'overview':
         return renderOverview();
       case 'student':
-        return (
-          <StudentReportCard
-            studentId={selectedStudent}
-            year={parseInt(selectedYear)}
-            term={parseInt(selectedTerm) as 1 | 2}
-          />
-        );
+        return <StudentReportCard />;
       case 'form':
-        return (
-          <FormReport
-            form={parseInt(selectedForm)}
-            year={parseInt(selectedYear)}
-            term={parseInt(selectedTerm) as 1 | 2}
-          />
-        );
+        return <FormReport />;
       default:
         return renderOverview();
     }
