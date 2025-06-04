@@ -62,15 +62,25 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMigrated, setIsMigrated] = useState(true); // Default to true to prevent migration UI flash
+  const [isMigrated, setIsMigrated] = useState(false); // Start with false to check properly
 
   // Check if data exists in database
   const checkIfDataMigrated = async () => {
     try {
-      const studentsData = await DataService.fetchStudents();
-      const teachersData = await DataService.fetchTeachers();
+      console.log("Checking migration status...");
+      const [studentsData, teachersData, subjectsData] = await Promise.all([
+        DataService.fetchStudents(),
+        DataService.fetchTeachers(),
+        DataService.fetchSubjects()
+      ]);
       
-      const hasData = studentsData.length > 0 && teachersData.length > 0;
+      console.log("Migration check results:", {
+        students: studentsData.length,
+        teachers: teachersData.length,
+        subjects: subjectsData.length
+      });
+      
+      const hasData = studentsData.length > 0 && teachersData.length > 0 && subjectsData.length > 0;
       setIsMigrated(hasData);
       return hasData;
     } catch (error) {
@@ -84,6 +94,7 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   const refreshData = async () => {
     setIsLoading(true);
     try {
+      console.log("Refreshing data from database...");
       const [
         studentsData,
         teachersData,
@@ -99,6 +110,15 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         DataService.fetchMarks(),
         DataService.fetchActivityLogs()
       ]);
+
+      console.log("Data loaded:", {
+        students: studentsData.length,
+        teachers: teachersData.length,
+        subjects: subjectsData.length,
+        exams: examsData.length,
+        marks: marksData.length,
+        activityLogs: activityLogsData.length
+      });
 
       setStudents(studentsData);
       setTeachers(teachersData);
@@ -120,9 +140,11 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     toast.info("Starting data migration...");
     
     try {
+      console.log("Starting migration process...");
       const result = await DataService.migrateAllData();
       
       if (result.success) {
+        console.log("Migration successful, refreshing data...");
         toast.success("Data migration completed successfully!");
         setIsMigrated(true);
         await refreshData();
@@ -141,10 +163,13 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   // Initialize data on component mount
   useEffect(() => {
     const initializeData = async () => {
+      console.log("Initializing application data...");
       const migrated = await checkIfDataMigrated();
       if (migrated) {
+        console.log("Data exists, loading...");
         await refreshData();
       } else {
+        console.log("No data found, showing migration prompt");
         setIsLoading(false);
       }
     };
@@ -154,12 +179,17 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
 
   // Authentication functions
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log("Attempting login for:", email);
+    console.log("Available teachers:", teachers.map(t => ({ email: t.email, role: t.role })));
+    
     const teacher = teachers.find(t => t.email === email && t.passwordHash === password);
     if (teacher) {
+      console.log("Login successful for:", teacher.firstName, teacher.lastName);
       setCurrentTeacher(teacher);
       toast.success("Login successful!");
       return true;
     }
+    console.log("Login failed - credentials not found");
     toast.error("Invalid credentials");
     return false;
   };
