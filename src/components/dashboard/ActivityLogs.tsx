@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 
 const ActivityLogs: React.FC = () => {
-  const { activityLogs, teachers } = useAppContext();
+  const { activityLogs, teachers } = useSupabaseAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
 

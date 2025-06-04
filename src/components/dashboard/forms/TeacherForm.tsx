@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Teacher } from "@/types";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the schema for teacher form validation
@@ -32,7 +32,7 @@ interface TeacherFormProps {
 }
 
 const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess }) => {
-  const { addTeacher, updateTeacher, subjects } = useAppContext();
+  const { addTeacher, updateTeacher, subjects } = useSupabaseAppContext();
   const isEditing = !!teacher;
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(
     teacher ? teacher.subjectIds : []
@@ -57,7 +57,7 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
     }
   });
 
-  const onSubmit = (data: TeacherFormValues) => {
+  const onSubmit = async (data: TeacherFormValues) => {
     // Create a properly typed teacher object with all required fields
     const teacherData: Omit<Teacher, "id"> = {
       firstName: data.firstName,
@@ -69,8 +69,7 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
     };
     
     if (isEditing && teacher) {
-      updateTeacher({
-        ...teacher,
+      await updateTeacher(teacher.id, {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -79,7 +78,7 @@ const TeacherForm: React.FC<TeacherFormProps> = ({ teacher, onCancel, onSuccess 
         subjectIds: selectedSubjects
       });
     } else {
-      addTeacher(teacherData);
+      await addTeacher(teacherData);
     }
     onSuccess();
   };

@@ -77,7 +77,7 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term }) => {
                     {item.student.firstName} {item.student.lastName}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {item.student.admissionNumber} - Stream {item.student.stream}
+                    {item.student.admissionNumber}
                   </p>
                 </div>
               </div>

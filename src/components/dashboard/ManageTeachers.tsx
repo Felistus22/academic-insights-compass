@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import TeacherForm from "./forms/TeacherForm";
 import { Teacher } from "@/types";
 
 const ManageTeachers: React.FC = () => {
-  const { teachers, subjects, currentTeacher, deleteTeacher } = useAppContext();
+  const { teachers, subjects, currentTeacher, deleteTeacher } = useSupabaseAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
