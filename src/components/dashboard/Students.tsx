@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,7 +23,7 @@ import { toast } from "sonner";
 import { ChevronDown, ArrowUpSquare } from "lucide-react";
 
 const Students: React.FC = () => {
-  const { students, updateStudent, currentTeacher } = useAppContext();
+  const { students, updateStudent, currentTeacher } = useSupabaseAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState("lastName"); // default sort by last name
@@ -122,15 +121,13 @@ const Students: React.FC = () => {
       
       if (student.form < 4) {
         // Promote to next form
-        updateStudent({
-          ...student,
+        updateStudent(student.id, {
           form: student.form + 1
         });
         promoted++;
       } else if (student.form === 4) {
         // Form 4 students are graduating
-        updateStudent({
-          ...student,
+        updateStudent(student.id, {
           form: 5, // Form 5 can represent alumni in this system
         });
         graduated++;
