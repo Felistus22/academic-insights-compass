@@ -1,6 +1,5 @@
-
 import React from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,7 @@ import { Users, BookOpen, GraduationCap, TrendingUp, Calendar, Award, Clock, Bel
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 const DashboardHome: React.FC = () => {
-  const { students, teachers, subjects, exams, marks, currentTeacher } = useAppContext();
+  const { students, teachers, subjects, exams, marks, currentTeacher } = useSupabaseAppContext();
 
   // Calculate basic statistics
   const totalStudents = students.length;
