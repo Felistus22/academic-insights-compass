@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
@@ -22,6 +23,16 @@ export class DataService {
   static async migrateAllData() {
     try {
       console.log("Starting data migration...");
+      
+      // Check if data already exists to prevent duplicates
+      const existingSubjects = await this.fetchSubjects();
+      const existingStudents = await this.fetchStudents();
+      const existingTeachers = await this.fetchTeachers();
+      
+      if (existingSubjects.length > 0 || existingStudents.length > 0 || existingTeachers.length > 0) {
+        console.log("Data already exists in database. Migration skipped.");
+        return { success: true, message: "Data already migrated" };
+      }
       
       // Insert subjects first (no dependencies)
       await this.insertSubjects();
@@ -53,6 +64,17 @@ export class DataService {
   }
 
   private static async insertSubjects() {
+    // Check if subjects already exist
+    const { data: existing } = await supabase
+      .from('subjects')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Subjects already exist, skipping insertion");
+      return;
+    }
+
     const { error } = await supabase
       .from('subjects')
       .insert(mockData.subjects);
@@ -62,6 +84,17 @@ export class DataService {
   }
 
   private static async insertStudents() {
+    // Check if students already exist
+    const { data: existing } = await supabase
+      .from('students')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Students already exist, skipping insertion");
+      return;
+    }
+
     const studentsData = mockData.students.map(student => ({
       id: student.id,
       first_name: student.firstName,
@@ -83,6 +116,17 @@ export class DataService {
   }
 
   private static async insertTeachers() {
+    // Check if teachers already exist
+    const { data: existing } = await supabase
+      .from('teachers')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Teachers already exist, skipping insertion");
+      return;
+    }
+
     const teachersData = mockData.teachers.map(teacher => ({
       id: teacher.id,
       first_name: teacher.firstName,
@@ -101,6 +145,17 @@ export class DataService {
   }
 
   private static async insertExams() {
+    // Check if exams already exist
+    const { data: existing } = await supabase
+      .from('exams')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Exams already exist, skipping insertion");
+      return;
+    }
+
     const { error } = await supabase
       .from('exams')
       .insert(mockData.exams);
@@ -110,6 +165,17 @@ export class DataService {
   }
 
   private static async insertMarks() {
+    // Check if marks already exist
+    const { data: existing } = await supabase
+      .from('marks')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Marks already exist, skipping insertion");
+      return;
+    }
+
     const marksData = mockData.marks.map(mark => ({
       id: mark.id,
       student_id: mark.studentId,
@@ -129,6 +195,17 @@ export class DataService {
   }
 
   private static async insertTeacherSubjects() {
+    // Check if teacher subjects already exist
+    const { data: existing } = await supabase
+      .from('teacher_subjects')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Teacher subjects already exist, skipping insertion");
+      return;
+    }
+
     const teacherSubjectsData = mockData.teacherSubjects.map(ts => ({
       teacher_id: ts.teacherId,
       subject_id: ts.subjectId
@@ -143,6 +220,17 @@ export class DataService {
   }
 
   private static async insertActivityLogs() {
+    // Check if activity logs already exist
+    const { data: existing } = await supabase
+      .from('activity_logs')
+      .select('id')
+      .limit(1);
+    
+    if (existing && existing.length > 0) {
+      console.log("Activity logs already exist, skipping insertion");
+      return;
+    }
+
     const activityLogsData = mockData.activityLogs.map(log => ({
       id: log.id,
       teacher_id: log.teacherId,
