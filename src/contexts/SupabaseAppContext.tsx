@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { DataService } from "@/services/dataService";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
@@ -63,7 +62,7 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMigrated, setIsMigrated] = useState(false);
+  const [isMigrated, setIsMigrated] = useState(true); // Default to true to prevent migration UI flash
 
   // Check if data exists in database
   const checkIfDataMigrated = async () => {
@@ -71,13 +70,12 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
       const studentsData = await DataService.fetchStudents();
       const teachersData = await DataService.fetchTeachers();
       
-      if (studentsData.length > 0 && teachersData.length > 0) {
-        setIsMigrated(true);
-        return true;
-      }
-      return false;
+      const hasData = studentsData.length > 0 && teachersData.length > 0;
+      setIsMigrated(hasData);
+      return hasData;
     } catch (error) {
       console.error("Error checking migration status:", error);
+      setIsMigrated(false);
       return false;
     }
   };
