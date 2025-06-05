@@ -35,6 +35,14 @@ interface AppContextType {
   addTeacher: (teacher: Omit<Teacher, 'id'>) => Promise<void>;
   updateTeacher: (id: string, teacher: Partial<Teacher>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
+
+  // Mark management
+  addMark: (mark: Omit<Mark, 'id'>) => Promise<void>;
+  updateMark: (mark: Mark) => Promise<void>;
+  deleteMark: (id: string) => Promise<void>;
+
+  // Exam management
+  addExam: (exam: Omit<Exam, 'id'>) => Promise<Exam>;
 }
 
 const SupabaseAppContext = createContext<AppContextType | undefined>(undefined);
@@ -261,6 +269,71 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     }
   };
 
+  // Mark management
+  const addMark = async (markData: Omit<Mark, 'id'>) => {
+    try {
+      const newMark = await DataService.addMark(markData);
+      if (newMark) {
+        setMarks(prev => [...prev, newMark]);
+        toast.success("Mark added successfully");
+      } else {
+        toast.error("Failed to add mark");
+      }
+    } catch (error) {
+      console.error("Error adding mark:", error);
+      toast.error("Failed to add mark");
+    }
+  };
+
+  const updateMark = async (mark: Mark) => {
+    try {
+      const success = await DataService.updateMark(mark.id, mark);
+      if (success) {
+        setMarks(prev => prev.map(m => m.id === mark.id ? mark : m));
+        toast.success("Mark updated successfully");
+      } else {
+        toast.error("Failed to update mark");
+      }
+    } catch (error) {
+      console.error("Error updating mark:", error);
+      toast.error("Failed to update mark");
+    }
+  };
+
+  const deleteMark = async (id: string) => {
+    try {
+      const success = await DataService.deleteMark(id);
+      if (success) {
+        setMarks(prev => prev.filter(m => m.id !== id));
+        toast.success("Mark deleted successfully");
+      } else {
+        toast.error("Failed to delete mark");
+      }
+    } catch (error) {
+      console.error("Error deleting mark:", error);
+      toast.error("Failed to delete mark");
+    }
+  };
+
+  // Exam management
+  const addExam = async (examData: Omit<Exam, 'id'>): Promise<Exam> => {
+    try {
+      const newExam = await DataService.addExam(examData);
+      if (newExam) {
+        setExams(prev => [...prev, newExam]);
+        toast.success("Exam added successfully");
+        return newExam;
+      } else {
+        toast.error("Failed to add exam");
+        throw new Error("Failed to add exam");
+      }
+    } catch (error) {
+      console.error("Error adding exam:", error);
+      toast.error("Failed to add exam");
+      throw error;
+    }
+  };
+
   const value: AppContextType = {
     students,
     teachers,
@@ -282,6 +355,10 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     addTeacher,
     updateTeacher,
     deleteTeacher,
+    addMark,
+    updateMark,
+    deleteMark,
+    addExam,
   };
 
   return (
