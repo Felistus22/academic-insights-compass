@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ArrowUpDown } from "lucide-react";
 
 const EnterMarks: React.FC = () => {
-  const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher, addExam } = useAppContext();
+  const { students, subjects, exams, marks, addMark, updateMark, deleteMark, currentTeacher, addExam } = useSupabaseAppContext();
   
   // State management
   const [selectedExam, setSelectedExam] = useState<string>("");
