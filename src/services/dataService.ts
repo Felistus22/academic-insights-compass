@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
@@ -502,5 +503,110 @@ export class DataService {
     }
 
     return true;
+  }
+
+  // Mark management methods
+  static async addMark(mark: Omit<Mark, 'id'>): Promise<Mark | null> {
+    const markData = {
+      id: crypto.randomUUID(),
+      student_id: mark.studentId,
+      subject_id: mark.subjectId,
+      exam_id: mark.examId,
+      score: mark.score,
+      grade: mark.grade,
+      remarks: mark.remarks
+    };
+
+    const { data, error } = await supabase
+      .from('marks')
+      .insert(markData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding mark:", error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      studentId: data.student_id,
+      subjectId: data.subject_id,
+      examId: data.exam_id,
+      score: data.score,
+      grade: data.grade,
+      remarks: data.remarks
+    };
+  }
+
+  static async updateMark(id: string, mark: Partial<Mark>): Promise<boolean> {
+    const updateData: any = {};
+    
+    if (mark.studentId !== undefined) updateData.student_id = mark.studentId;
+    if (mark.subjectId !== undefined) updateData.subject_id = mark.subjectId;
+    if (mark.examId !== undefined) updateData.exam_id = mark.examId;
+    if (mark.score !== undefined) updateData.score = mark.score;
+    if (mark.grade !== undefined) updateData.grade = mark.grade;
+    if (mark.remarks !== undefined) updateData.remarks = mark.remarks;
+
+    const { error } = await supabase
+      .from('marks')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error updating mark:", error);
+      return false;
+    }
+
+    return true;
+  }
+
+  static async deleteMark(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('marks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error deleting mark:", error);
+      return false;
+    }
+
+    return true;
+  }
+
+  // Exam management methods
+  static async addExam(exam: Omit<Exam, 'id'>): Promise<Exam | null> {
+    const examData = {
+      id: crypto.randomUUID(),
+      name: exam.name,
+      type: exam.type,
+      term: exam.term,
+      year: exam.year,
+      form: exam.form,
+      date: exam.date
+    };
+
+    const { data, error } = await supabase
+      .from('exams')
+      .insert(examData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding exam:", error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      type: data.type as "TermStart" | "MidTerm" | "EndTerm" | "Custom",
+      term: data.term as 1 | 2,
+      year: data.year,
+      form: data.form,
+      date: data.date
+    };
   }
 }

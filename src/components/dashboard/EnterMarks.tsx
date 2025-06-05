@@ -31,6 +31,22 @@ const EnterMarks: React.FC = () => {
   const [customExamYear, setCustomExamYear] = useState<string>(new Date().getFullYear().toString());
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
+  // Helper function to generate a grade based on score
+  const getGrade = (score: number): string => {
+    if (score >= 80) return "A";
+    if (score >= 75) return "A-";
+    if (score >= 70) return "B+";
+    if (score >= 65) return "B";
+    if (score >= 60) return "B-";
+    if (score >= 55) return "C+";
+    if (score >= 50) return "C";
+    if (score >= 45) return "C-";
+    if (score >= 40) return "D+";
+    if (score >= 35) return "D";
+    if (score >= 30) return "D-";
+    return "E";
+  };
+
   // Filter students by selected class and stream with proper sorting
   const filteredStudents = students
     .filter((student) => 
@@ -71,7 +87,7 @@ const EnterMarks: React.FC = () => {
   };
 
   // Handle adding a new exam with custom year
-  const handleAddCustomExam = () => {
+  const handleAddCustomExam = async () => {
     // Display dialog for creating new exam
     const examName = prompt("Enter exam name:");
     if (!examName) return;
@@ -82,18 +98,23 @@ const EnterMarks: React.FC = () => {
       return;
     }
     
-    const newExam = addExam({
-      name: examName,
-      type: "Custom",
-      term: 1, // Default term
-      year: year,
-      form: selectedClass,
-      date: new Date().toISOString()
-    });
-    
-    // Set the newly created exam as selected
-    setSelectedExam(newExam.id);
-    toast.success(`New exam "${examName}" created successfully!`);
+    try {
+      const newExam = await addExam({
+        name: examName,
+        type: "Custom",
+        term: 1, // Default term
+        year: year,
+        form: selectedClass,
+        date: new Date().toISOString()
+      });
+      
+      // Set the newly created exam as selected
+      setSelectedExam(newExam.id);
+      toast.success(`New exam "${examName}" created successfully!`);
+    } catch (error) {
+      console.error("Error creating exam:", error);
+      toast.error("Failed to create exam");
+    }
   };
   
   const handleSubmitMarks = () => {
@@ -124,7 +145,8 @@ const EnterMarks: React.FC = () => {
         // Update existing mark
         updateMark({
           ...existingMark,
-          score: score
+          score: score,
+          grade: getGrade(score)
         });
         success++;
       } else {
@@ -134,6 +156,7 @@ const EnterMarks: React.FC = () => {
           examId: selectedExam,
           subjectId: selectedSubject,
           score: score,
+          grade: getGrade(score),
           remarks: ""
         });
         success++;
