@@ -1,8 +1,13 @@
-
 import React, { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   LayoutDashboard, 
   Users, 
@@ -13,10 +18,14 @@ import {
   UserCheck,
   ClipboardList,
   Activity,
-  CreditCard
+  CreditCard,
+  user,
+  edit
 } from "lucide-react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 
 const DashboardLayout: React.FC = () => {
   const { currentTeacher, logout } = useSupabaseAppContext();
@@ -24,6 +33,7 @@ const DashboardLayout: React.FC = () => {
   const location = useLocation();
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -96,14 +106,32 @@ const DashboardLayout: React.FC = () => {
           </Button>
           
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              Welcome, {currentTeacher?.firstName} {currentTeacher?.lastName}
-            </span>
-            <Avatar>
-              <AvatarFallback>
-                {currentTeacher?.firstName?.charAt(0)}{currentTeacher?.lastName?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <ThemeToggle />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {currentTeacher?.firstName} {currentTeacher?.lastName}
+                  </span>
+                  <Avatar>
+                    <AvatarFallback>
+                      {currentTeacher?.firstName?.charAt(0)}{currentTeacher?.lastName?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsProfileDialogOpen(true)}>
+                  <edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -112,6 +140,11 @@ const DashboardLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      <ProfileEditDialog 
+        open={isProfileDialogOpen} 
+        onOpenChange={setIsProfileDialogOpen} 
+      />
     </div>
   );
 };

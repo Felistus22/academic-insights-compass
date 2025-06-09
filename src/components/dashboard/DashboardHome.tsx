@@ -1,19 +1,59 @@
+
 import React from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Users, BookOpen, GraduationCap, TrendingUp, Calendar, Award, Clock, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, BookOpen, GraduationCap, TrendingUp, Calendar, Award, Clock, Bell, Plus, FileText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const DashboardHome: React.FC = () => {
   const { students, teachers, subjects, exams, marks, currentTeacher } = useSupabaseAppContext();
+  const navigate = useNavigate();
 
   // Calculate basic statistics
   const totalStudents = students.length;
   const totalTeachers = teachers.length;
   const totalSubjects = subjects.length;
   const totalExams = exams.length;
+
+  // Quick actions for different user roles
+  const quickActions = [
+    {
+      title: "Add New Student",
+      description: "Register a new student",
+      icon: Plus,
+      action: () => navigate("/dashboard/students"),
+      adminOnly: true
+    },
+    {
+      title: "Enter Marks",
+      description: "Record student examination marks",
+      icon: FileText,
+      action: () => navigate("/dashboard/enter-marks"),
+      adminOnly: false
+    },
+    {
+      title: "View Reports",
+      description: "Generate student performance reports",
+      icon: TrendingUp,
+      action: () => navigate("/dashboard/reports"),
+      adminOnly: false
+    },
+    {
+      title: "Manage Teachers",
+      description: "Add or edit teacher information",
+      icon: GraduationCap,
+      action: () => navigate("/dashboard/teachers"),
+      adminOnly: true
+    }
+  ];
+
+  const availableActions = quickActions.filter(action => 
+    !action.adminOnly || currentTeacher?.role === "admin"
+  );
 
   // Students by form distribution with proper labeling (changed to bar chart data)
   const studentsByForm = [1, 2, 3, 4, 5].map(form => ({
@@ -56,26 +96,6 @@ const DashboardHome: React.FC = () => {
         date: new Date(exam.date).toLocaleDateString()
       };
     });
-
-  // Grade distribution
-  const gradeDistribution = [
-    { name: 'A (80-100)', value: 0, color: '#10B981' },
-    { name: 'B (65-79)', value: 0, color: '#3B82F6' },
-    { name: 'C (50-64)', value: 0, color: '#F59E0B' },
-    { name: 'D (40-49)', value: 0, color: '#EF4444' },
-    { name: 'F (0-39)', value: 0, color: '#6B7280' }
-  ];
-
-  marks.forEach(mark => {
-    if (mark.score >= 80) gradeDistribution[0].value++;
-    else if (mark.score >= 65) gradeDistribution[1].value++;
-    else if (mark.score >= 50) gradeDistribution[2].value++;
-    else if (mark.score >= 40) gradeDistribution[3].value++;
-    else gradeDistribution[4].value++;
-  });
-
-  // Filter out empty grades
-  const filteredGradeDistribution = gradeDistribution.filter(grade => grade.value > 0);
 
   // Top performing students (overall)
   const topStudents = students
@@ -130,6 +150,26 @@ const DashboardHome: React.FC = () => {
         <p className="text-muted-foreground">
           Here's what's happening at your school today.
         </p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {availableActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Card key={action.title} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={action.action}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{action.title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  {action.description}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Statistics Cards */}
@@ -188,91 +228,50 @@ const DashboardHome: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Average Marks by Subject</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={subjectPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  fontSize={11}
-                  interval={0}
-                />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="average" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Students by Form</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={studentsByForm} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="form" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="students" fill="#10B981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance Trend and Grade Distribution */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance Trend</CardTitle>
-            <CardDescription>
-              Average performance over recent exams
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="average" stroke="#3B82F6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Grade Distribution</CardTitle>
-            <CardDescription>
-              Overall grade distribution across all exams
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filteredGradeDistribution}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#10B981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      {subjectPerformance.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Average Marks by Subject</CardTitle>
+            </CardHeader>
+            <CardContent className="pl-2">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={subjectPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={11}
+                    interval={0}
+                  />
+                  <YAxis />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="average" fill="#3B82F6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          
+          <Card className="col-span-3">
+            <CardHeader>
+              <CardTitle>Students by Form</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={studentsByForm} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="form" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="students" fill="#10B981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Recent Activity and Top Students */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -285,7 +284,7 @@ const DashboardHome: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activities.map((activity, index) => {
+              {activities.length > 0 ? activities.map((activity, index) => {
                 const Icon = activity.icon;
                 return (
                   <div key={index} className="flex items-center space-x-3">
@@ -300,7 +299,9 @@ const DashboardHome: React.FC = () => {
                     </div>
                   </div>
                 );
-              })}
+              }) : (
+                <p className="text-sm text-muted-foreground">No recent activity</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -314,7 +315,7 @@ const DashboardHome: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topStudents.map((item, index) => (
+              {topStudents.length > 0 ? topStudents.map((item, index) => (
                 <div key={item.student.id} className="flex items-center space-x-3">
                   <Avatar>
                     <AvatarImage src={item.student.imageUrl} />
@@ -334,7 +335,9 @@ const DashboardHome: React.FC = () => {
                     {item.average}%
                   </Badge>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground">No student records available</p>
+              )}
             </div>
           </CardContent>
         </Card>
