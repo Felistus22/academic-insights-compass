@@ -1,52 +1,50 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SupabaseAppProvider, useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { SupabaseAppContextProvider } from "./contexts/SupabaseAppContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import MigrationPrompt from "./components/MigrationPrompt";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import DashboardHome from "./components/dashboard/DashboardHome";
+import Students from "./components/dashboard/Students";
+import ManageTeachers from "./components/dashboard/ManageTeachers";
+import ManageSubjects from "./components/dashboard/ManageSubjects";
+import EnterMarks from "./components/dashboard/EnterMarks";
+import Reports from "./components/dashboard/Reports";
+import FeeManagement from "./components/dashboard/FeeManagement";
+import ActivityLogs from "./components/dashboard/ActivityLogs";
+import "./App.css";
 
 const queryClient = new QueryClient();
-
-const AppContent = () => {
-  const { isMigrated, isLoading } = useSupabaseAppContext();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-education-primary/10 to-education-accent/10 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-education-primary mx-auto mb-4"></div>
-          <p className="text-education-primary font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isMigrated) {
-    return <MigrationPrompt />;
-  }
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  );
-};
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SupabaseAppProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
-          <AppContent />
-          <Toaster />
+          <SupabaseAppContextProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<DashboardHome />} />
+                  <Route path="students" element={<Students />} />
+                  <Route path="teachers" element={<ManageTeachers />} />
+                  <Route path="subjects" element={<ManageSubjects />} />
+                  <Route path="enter-marks" element={<EnterMarks />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="fees" element={<FeeManagement />} />
+                  <Route path="activity-logs" element={<ActivityLogs />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+            </Router>
+          </SupabaseAppContextProvider>
         </TooltipProvider>
-      </SupabaseAppProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
