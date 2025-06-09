@@ -45,7 +45,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
     );
   }, [marks, studentId, relevantExams]);
 
-  // Calculate subject averages
+  // Calculate subject averages for this student
   const subjectAverages = useMemo(() => {
     const averages: Record<string, number> = {};
     
@@ -60,30 +60,137 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
     return averages;
   }, [subjects, studentMarks]);
 
-  // Generate data for the performance chart
+  // Calculate subject means (class averages for each subject)
+  const subjectMeans = useMemo(() => {
+    const means: Record<string, number> = {};
+    
+    subjects.forEach(subject => {
+      // Get all marks for this subject from students in the same form
+      const formStudents = students.filter(s => s.form === student?.form);
+      const allSubjectMarks = marks.filter(
+        m => m.subjectId === subject.id && 
+        formStudents.some(s => s.id === m.studentId) &&
+        relevantExams.some(e => e.id === m.examId)
+      );
+      
+      if (allSubjectMarks.length > 0) {
+        // Group by student and calculate their average first
+        const studentAverages: Record<string, number[]> = {};
+        allSubjectMarks.forEach(mark => {
+          if (!studentAverages[mark.studentId]) {
+            studentAverages[mark.studentId] = [];
+          }
+          studentAverages[mark.studentId].push(mark.score);
+        });
+        
+        // Calculate class average from student averages
+        const classAverages = Object.values(studentAverages).map(scores => 
+          scores.reduce((sum, score) => sum + score, 0) / scores.length
+        );
+        
+        means[subject.id] = Math.round(
+          classAverages.reduce((sum, avg) => sum + avg, 0) / classAverages.length
+        );
+      }
+    });
+    
+    return means;
+  }, [subjects, students, marks, student, relevantExams]);
+
+  // Calculate student ranks in each subject
+  const subjectRanks = useMemo(() => {
+    const ranks: Record<string, number> = {};
+    
+    if (!student) return ranks;
+    
+    subjects.forEach(subject => {
+      const formStudents = students.filter(s => s.form === student.form);
+      
+      // Calculate averages for all students in this subject
+      const studentSubjectAverages = formStudents.map(s => {
+        const studentSubjectMarks = marks.filter(
+          m => m.studentId === s.id && 
+          m.subjectId === subject.id &&
+          relevantExams.some(e => e.id === m.examId)
+        );
+        
+        if (studentSubjectMarks.length > 0) {
+          const total = studentSubjectMarks.reduce((sum, m) => sum + m.score, 0);
+          return {
+            studentId: s.id,
+            average: total / studentSubjectMarks.length
+          };
+        }
+        
+        return {
+          studentId: s.id,
+          average: 0
+        };
+      });
+      
+      // Sort by average (descending) and find rank
+      studentSubjectAverages.sort((a, b) => b.average - a.average);
+      const rank = studentSubjectAverages.findIndex(item => item.studentId === studentId) + 1;
+      ranks[subject.id] = rank;
+    });
+    
+    return ranks;
+  }, [subjects, students, marks, student, studentId, relevantExams]);
+
+  // Calculate subject entry counts
+  const subjectEntries = useMemo(() => {
+    const entries: Record<string, number> = {};
+    
+    if (!student) return entries;
+    
+    subjects.forEach(subject => {
+      const formStudents = students.filter(s => s.form === student.form);
+      
+      // Count students who have at least one mark in this subject
+      const studentsWithMarks = formStudents.filter(s => 
+        marks.some(m => 
+          m.studentId === s.id && 
+          m.subjectId === subject.id &&
+          relevantExams.some(e => e.id === m.examId)
+        )
+      );
+      
+      entries[subject.id] = studentsWithMarks.length;
+    });
+    
+    return entries;
+  }, [subjects, students, marks, student, relevantExams]);
+
+  // Generate data for the performance chart (terminal averages)
   const chartData = useMemo(() => {
     const data: any[] = [];
     
-    // Process current exams
-    relevantExams.forEach(exam => {
-      const examData: any = {
-        name: exam.type === "Custom" ? exam.name : exam.type,
-      };
+    // Get terminal averages for each term
+    [1, 2].forEach(termNum => {
+      const termExams = exams.filter(
+        e => e.year === year && e.term === termNum && e.form === student?.form
+      );
       
-      subjects.forEach(subject => {
-        const mark = studentMarks.find(
-          m => m.examId === exam.id && m.subjectId === subject.id
+      if (termExams.length > 0) {
+        const termMarks = marks.filter(
+          m => m.studentId === studentId && 
+          termExams.some(e => e.id === m.examId)
         );
-        if (mark) {
-          examData[subject.name] = mark.score;
+        
+        if (termMarks.length > 0) {
+          const termTotal = termMarks.reduce((sum, m) => sum + m.score, 0);
+          const termAverage = Math.round(termTotal / termMarks.length);
+          
+          data.push({
+            name: `Term ${termNum}`,
+            average: termAverage
+          });
         }
-      });
-      
-      data.push(examData);
+      }
     });
     
     return data;
-  }, [relevantExams, subjects, studentMarks]);
+  }, [exams, marks, studentId, year, student]);
 
   // Calculate total and average
   const totalMarks = useMemo(() => {
@@ -176,14 +283,16 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
             />
           </div>
           <div className="text-center flex-1">
-            <h1 className="text-2xl font-bold uppercase">ST PADRE PIO GIRLS HIGH SCHOOL</h1>
-            <p className="text-sm text-muted-foreground">P.O. BOX 123 NAIROBI TEL: 071234567</p>
+            <h1 className="text-lg font-bold uppercase">LITTLE SISTERS OF ST.FRANCIS</h1>
+            <h2 className="text-xl font-bold uppercase">ST.PADRE PIO GIRLS SECONDARY SCHOOL</h2>
+            <p className="text-sm">RIPOTI YA MAENDELEO YA KITAALUMA KIDATO CHA PILI</p>
+            <p className="text-sm font-bold uppercase">MUHULA WA KWANZA - 2022</p>
+            <div className="text-xs mt-2">
+              <p>P.O.BOX 11531, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PHONE No: 0682 159 199</p>
+              <p>ARUSHA-TANZANIA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; E-mail:- st.padrepiogirls@gmail.com</p>
+            </div>
           </div>
           <div className="w-16"> {/* Spacer for balance */}</div>
-        </div>
-        
-        <div className="border-2 border-foreground p-2 inline-block">
-          <h2 className="text-xl font-bold uppercase">TERMLY REPORT FORM</h2>
         </div>
       </CardHeader>
       
@@ -197,10 +306,10 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
             <span className="font-medium">Name:</span> {`${student.firstName} ${student.lastName}`.toUpperCase()}
           </div>
           <div className="col-span-2">
-            <span className="font-medium">Class:</span> Form {student.form}
+            <span className="font-medium">Class:</span> Form {student.form} {student.stream}
           </div>
           <div className="col-span-3">
-            <span className="font-medium">Term:</span> {term}/2016 House: ST. ELIZABETH
+            <span className="font-medium">Term:</span> {term}/{year}
           </div>
         </div>
 
@@ -216,6 +325,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
                   </th>
                 ))}
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Mean</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Grade</th>
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Entry</th>
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Average</th>
                 <th className="border-r border-foreground px-2 py-1 text-center bg-muted">COMMENT BY SUBJECT</th>
@@ -226,6 +336,9 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
               {subjects.map((subject, index) => {
                 const average = subjectAverages[subject.id] || 0;
                 const grade = getOverallGrade(average);
+                const subjectMean = subjectMeans[subject.id] || 0;
+                const rank = subjectRanks[subject.id] || 0;
+                const entry = subjectEntries[subject.id] || 0;
                 
                 // Get remarks based on grade
                 let remarks = "N/A";
@@ -253,11 +366,14 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
                     <td className="border-r border-foreground px-1 py-1 text-center font-medium">
                       {average || "-"}
                     </td>
-                    <td className="border-r border-foreground px-1 py-1 text-center">
-                      {index * 5 + 121} {/* Mock entry numbers like in the image */}
+                    <td className="border-r border-foreground px-1 py-1 text-center font-medium">
+                      {grade}
                     </td>
                     <td className="border-r border-foreground px-1 py-1 text-center">
-                      {(index + 25) * 10} {/* Mock class averages */}
+                      {entry}
+                    </td>
+                    <td className="border-r border-foreground px-1 py-1 text-center">
+                      {subjectMean}
                     </td>
                     <td className="border-r border-foreground px-2 py-1 text-center">
                       {remarks}
@@ -278,10 +394,6 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <div className="col-span-4">
             <div className="border border-foreground p-2">
               <div className="grid grid-cols-2 gap-2">
-                <div><span className="font-medium">Dev:</span> -109</div>
-                <div><span className="font-medium">VAP:</span> 2.23</div>
-              </div>
-              <div className="mt-2">
                 <div><span className="font-medium">T.Marks:</span> {totalMarks}</div>
                 <div><span className="font-medium">Avg.Marks:</span> {averageMark}</div>
               </div>
@@ -314,18 +426,18 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
             </div>
             <div className="flex justify-between mt-1">
               <span>Last Term Class Position:</span>
-              <span>{Math.max(1, classPosition - 2)}</span>
+              <span>{Math.max(1, Number(classPosition) - 2)}</span>
             </div>
           </div>
           
           <div className="border border-foreground p-2">
             <div className="flex justify-between">
               <span className="font-medium">Overall Position:</span>
-              <span>{classPosition + 42} Out of {classmates * 4}</span>
+              <span>{Number(classPosition) + 42} Out of {classmates * 4}</span>
             </div>
             <div className="flex justify-between mt-1">
               <span>Last Term Form Position:</span>
-              <span>{classPosition + 38}</span>
+              <span>{Number(classPosition) + 38}</span>
             </div>
           </div>
         </div>
@@ -442,9 +554,9 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <div className="border-b border-foreground w-40 mt-2"></div>
         </div>
 
-        {/* Performance Chart */}
+        {/* Performance Chart - Terminal Average Scores */}
         <div className="border border-foreground p-4">
-          <h3 className="text-center font-medium mb-4">MeanPoints / Term</h3>
+          <h3 className="text-center font-medium mb-4">Terminal Average Scores (Out of 100)</h3>
           {chartData.length > 0 ? (
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -455,7 +567,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey="Mathematics"
+                    dataKey="average"
                     stroke="#1E88E5"
                     activeDot={{ r: 8 }}
                   />
