@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Image } from "@/components/ui/image";
+import { User } from "lucide-react";
 
 interface StudentReportCardProps {
   studentId: string;
@@ -267,6 +268,55 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
     return students.filter(s => s.form === student.form).length;
   }, [student, students]);
 
+  // Calculate form position (all students in the same form across all streams)
+  const formPosition = useMemo(() => {
+    if (!student) return "N/A";
+    
+    // Get all students in the same form
+    const formStudents = students.filter(s => s.form === student.form);
+    
+    // Calculate average for each student
+    const studentAverages = formStudents.map(s => {
+      const studentSubjectAverages: Record<string, number> = {};
+      
+      subjects.forEach(subject => {
+        const subjectMarks = marks.filter(
+          m => m.studentId === s.id && 
+          m.subjectId === subject.id &&
+          relevantExams.some(e => e.id === m.examId)
+        );
+        
+        if (subjectMarks.length > 0) {
+          const total = subjectMarks.reduce((sum, m) => sum + m.score, 0);
+          studentSubjectAverages[subject.id] = Math.round(total / subjectMarks.length);
+        }
+      });
+      
+      const subjectValues = Object.values(studentSubjectAverages);
+      const average = subjectValues.length > 0
+        ? subjectValues.reduce((sum, avg) => sum + avg, 0) / subjectValues.length
+        : 0;
+      
+      return {
+        studentId: s.id,
+        average,
+      };
+    });
+    
+    // Sort by average score (descending)
+    studentAverages.sort((a, b) => b.average - a.average);
+    
+    // Find position of current student
+    const position = studentAverages.findIndex(item => item.studentId === studentId) + 1;
+    
+    return position;
+  }, [student, students, subjects, marks, studentId, relevantExams]);
+
+  const formClassmates = useMemo(() => {
+    if (!student) return 0;
+    return students.filter(s => s.form === student.form).length;
+  }, [student, students]);
+
   if (!student) {
     return <div>Student not found</div>;
   }
@@ -276,11 +326,18 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
       <CardHeader className="text-center border-b pb-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-4">
-            <Image 
-              src="/lovable-uploads/5f64003b-6ab3-4638-aea6-83966311d310.png"
-              alt="St Padre Pio Girls School Logo"
-              className="h-16 w-16 object-contain"
-            />
+            {/* Student Photo or SVG on the left */}
+            <div className="w-16 h-16 flex items-center justify-center border rounded">
+              {student.imageUrl && student.imageUrl !== '/placeholder.svg' ? (
+                <Image 
+                  src={student.imageUrl}
+                  alt={`${student.firstName} ${student.lastName}`}
+                  className="h-16 w-16 object-cover rounded"
+                />
+              ) : (
+                <User className="h-12 w-12 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="text-center flex-1">
             <h1 className="text-lg font-bold uppercase">LITTLE SISTERS OF ST.FRANCIS</h1>
@@ -292,7 +349,14 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
               <p>ARUSHA-TANZANIA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; E-mail:- st.padrepiogirls@gmail.com</p>
             </div>
           </div>
-          <div className="w-16"> {/* Spacer for balance */}</div>
+          {/* School Logo on the right */}
+          <div className="flex items-center gap-4">
+            <Image 
+              src="/lovable-uploads/5f64003b-6ab3-4638-aea6-83966311d310.png"
+              alt="St Padre Pio Girls School Logo"
+              className="h-16 w-16 object-contain"
+            />
+          </div>
         </div>
       </CardHeader>
       
@@ -389,18 +453,18 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           </table>
         </div>
 
-        {/* Summary Section */}
+        {/* Summary Section - Updated Layout */}
         <div className="grid grid-cols-12 gap-4 mb-6 text-sm">
-          <div className="col-span-4">
+          <div className="col-span-3">
             <div className="border border-foreground p-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-1">
                 <div><span className="font-medium">T.Marks:</span> {totalMarks}</div>
                 <div><span className="font-medium">Avg.Marks:</span> {averageMark}</div>
               </div>
             </div>
           </div>
           
-          <div className="col-span-4">
+          <div className="col-span-3">
             <div className="border border-foreground p-2">
               <div><span className="font-medium">T.Points:</span> 74</div>
               <div><span className="font-medium">Avg.Points:</span> 6.170</div>
@@ -408,36 +472,44 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
             </div>
           </div>
           
-          <div className="col-span-4">
+          <div className="col-span-3">
             <div className="border border-foreground p-2">
               <div><span className="font-medium">KCPEMarks:</span> 350</div>
               <div><span className="font-medium">Pos:</span> {classPosition}</div>
               <div><span className="font-medium">Last Term Grade:</span> B-</div>
             </div>
           </div>
+
+          <div className="col-span-3">
+            <div className="border border-foreground p-2">
+              <div><span className="font-medium">Fee Balance:</span> TSh 0</div>
+              <div><span className="font-medium">Other Charges:</span> TSh 0</div>
+              <div><span className="font-medium">Total Due:</span> TSh 0</div>
+            </div>
+          </div>
         </div>
 
-        {/* Position Information */}
+        {/* Position Information - Updated with Class and Form positions */}
         <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
           <div className="border border-foreground p-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between mb-1">
               <span className="font-medium">Class Position:</span>
               <span>{classPosition} Out of {classmates}</span>
             </div>
-            <div className="flex justify-between mt-1">
+            <div className="flex justify-between">
               <span>Last Term Class Position:</span>
               <span>{Math.max(1, Number(classPosition) - 2)}</span>
             </div>
           </div>
           
           <div className="border border-foreground p-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between mb-1">
               <span className="font-medium">Overall Position:</span>
-              <span>{Number(classPosition) + 42} Out of {classmates * 4}</span>
+              <span>{formPosition} Out of {formClassmates}</span>
             </div>
-            <div className="flex justify-between mt-1">
+            <div className="flex justify-between">
               <span>Last Term Form Position:</span>
-              <span>{Number(classPosition) + 38}</span>
+              <span>{Math.max(1, Number(formPosition) - 1)}</span>
             </div>
           </div>
         </div>
@@ -509,23 +581,23 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           </div>
         </div>
 
-        {/* Fees and Term Information */}
+        {/* Fees and Term Information - Updated */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="border border-foreground p-3">
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="font-medium">FeesBal.</p>
-                <div className="border-b border-foreground mt-2"></div>
+                <p>TSh 0</p>
               </div>
               <div>
                 <p className="font-medium">FeeNextTerm</p>
-                <div className="border-b border-foreground mt-2"></div>
+                <p>TSh 450,000</p>
               </div>
               <div>
                 <p className="font-medium">OtherCharges</p>
-                <div className="border-b border-foreground mt-2"></div>
-                <p className="font-medium mt-4">TotalFees</p>
-                <div className="border-b border-foreground mt-2"></div>
+                <p>TSh 50,000</p>
+                <p className="font-medium mt-2">TotalFees</p>
+                <p>TSh 500,000</p>
               </div>
             </div>
           </div>
@@ -535,12 +607,12 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
               <div>
                 <p className="font-medium">THIS TERM</p>
                 <p>CLOSING DATE:</p>
-                <div className="border-b border-foreground mt-2"></div>
+                <p className="font-medium">15th Dec 2023</p>
               </div>
               <div>
                 <p className="font-medium">NEXT TERM</p>
                 <p>OPENING DATE:</p>
-                <div className="border-b border-foreground mt-2"></div>
+                <p className="font-medium">8th Jan 2024</p>
               </div>
             </div>
           </div>
