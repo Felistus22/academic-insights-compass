@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { toast } from "sonner";
 
 const DashboardLayout: React.FC = () => {
-  const { currentUser, logout } = useSupabaseAppContext();
+  const { currentTeacher, logout } = useSupabaseAppContext();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -96,11 +97,11 @@ const DashboardLayout: React.FC = () => {
           
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              Welcome, {currentUser?.firstName} {currentUser?.lastName}
+              Welcome, {currentTeacher?.firstName} {currentTeacher?.lastName}
             </span>
             <Avatar>
               <AvatarFallback>
-                {currentUser?.firstName?.charAt(0)}{currentUser?.lastName?.charAt(0)}
+                {currentTeacher?.firstName?.charAt(0)}{currentTeacher?.lastName?.charAt(0)}
               </AvatarFallback>
             </Avatar>
           </div>

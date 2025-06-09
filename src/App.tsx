@@ -1,9 +1,10 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { SupabaseAppContextProvider } from "./contexts/SupabaseAppContext";
+import { SupabaseAppProvider } from "./contexts/SupabaseAppContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -24,7 +25,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
-          <SupabaseAppContextProvider>
+          <SupabaseAppProvider>
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -42,7 +43,7 @@ function App() {
               </Routes>
               <Toaster />
             </Router>
-          </SupabaseAppContextProvider>
+          </SupabaseAppProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
