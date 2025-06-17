@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,8 @@ import {
   ClipboardList,
   Activity,
   CreditCard,
-  user,
-  edit
+  User,
+  Edit
 } from "lucide-react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { toast } from "sonner";
@@ -123,7 +124,7 @@ const DashboardLayout: React.FC = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsProfileDialogOpen(true)}>
-                  <edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 h-4 w-4" />
                   Edit Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>

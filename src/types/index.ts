@@ -45,6 +45,7 @@ export interface Teacher {
   passwordHash: string; // Changed from password to passwordHash to match database
   subjectIds: string[]; // Added back the missing subjectIds property
   role: "teacher" | "admin";
+  phoneNumber?: string; // Added phoneNumber property
 }
 
 export interface ActivityLog {
