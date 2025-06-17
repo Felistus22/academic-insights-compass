@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,13 +208,18 @@ const Reports: React.FC = () => {
     return `${position} out of ${classmates.length}`;
   };
   
-  // Helper function to generate a summary of student performance
+  // Enhanced helper function to generate a comprehensive summary of student performance
   const getStudentPerformanceSummary = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return { 
       summary: "performance information not available",
       averageScore: 0,
-      grade: "N/A" 
+      grade: "N/A",
+      gpa: 0,
+      division: "N/A",
+      totalPoints: 0,
+      subjectBreakdown: [],
+      position: "N/A"
     };
     
     // Find relevant exams
@@ -231,87 +235,150 @@ const Reports: React.FC = () => {
       relevantExams.some(e => e.id === m.examId)
     );
     
-    // Calculate average score
     if (studentMarks.length === 0) {
       return { 
         summary: "no recorded marks for this term",
         averageScore: 0,
-        grade: "N/A" 
+        grade: "N/A",
+        gpa: 0,
+        division: "N/A",
+        totalPoints: 0,
+        subjectBreakdown: [],
+        position: "N/A"
       };
     }
     
-    const totalScore = studentMarks.reduce((sum, mark) => sum + mark.score, 0);
-    const averageScore = Math.round(totalScore / studentMarks.length);
+    // Calculate subject averages and grades
+    const subjectPerformance: Array<{
+      subject: string;
+      average: number;
+      grade: string;
+      points: number;
+    }> = [];
     
-    // Get grade
-    const grade = getGradeFromScore(averageScore);
+    let totalScore = 0;
+    let totalGpaPoints = 0;
+    let totalPoints = 0;
+    let subjectCount = 0;
     
-    // Return appropriate message based on performance
+    subjects.forEach(subject => {
+      const subjectMarks = studentMarks.filter(m => m.subjectId === subject.id);
+      if (subjectMarks.length > 0) {
+        const subjectTotal = subjectMarks.reduce((sum, m) => sum + m.score, 0);
+        const subjectAverage = Math.round(subjectTotal / subjectMarks.length);
+        const grade = getGradeFromScore(subjectAverage);
+        const points = getPointsFromGrade(grade);
+        
+        subjectPerformance.push({
+          subject: subject.name,
+          average: subjectAverage,
+          grade,
+          points
+        });
+        
+        totalScore += subjectAverage;
+        totalGpaPoints += points;
+        totalPoints += points;
+        subjectCount++;
+      }
+    });
+    
+    const averageScore = subjectCount > 0 ? Math.round(totalScore / subjectCount) : 0;
+    const gpa = subjectCount > 0 ? Math.round((totalGpaPoints / subjectCount) * 100) / 100 : 0;
+    const overallGrade = getGradeFromScore(averageScore);
+    const division = getDivisionFromGPA(gpa);
+    const position = getStudentPositionInfo(studentId);
+    
+    // Create comprehensive summary
     let summary = "";
     if (averageScore >= 80) {
-      summary = `outstanding performance with an average of ${averageScore}%`;
+      summary = `outstanding performance with an average of ${averageScore}% (Grade ${overallGrade})`;
     } else if (averageScore >= 70) {
-      summary = `excellent performance with an average of ${averageScore}%`;
+      summary = `excellent performance with an average of ${averageScore}% (Grade ${overallGrade})`;
     } else if (averageScore >= 60) {
-      summary = `very good performance with an average of ${averageScore}%`;
+      summary = `very good performance with an average of ${averageScore}% (Grade ${overallGrade})`;
     } else if (averageScore >= 50) {
-      summary = `good performance with an average of ${averageScore}%`;
+      summary = `good performance with an average of ${averageScore}% (Grade ${overallGrade})`;
     } else if (averageScore >= 40) {
-      summary = `fair performance with an average of ${averageScore}%`;
+      summary = `fair performance with an average of ${averageScore}% (Grade ${overallGrade})`;
     } else {
-      summary = `performance that needs improvement, with an average of ${averageScore}%`;
+      summary = `performance that needs improvement, with an average of ${averageScore}% (Grade ${overallGrade})`;
     }
     
     return {
       summary,
       averageScore,
-      grade
+      grade: overallGrade,
+      gpa,
+      division,
+      totalPoints,
+      subjectBreakdown: subjectPerformance,
+      position
     };
   };
   
   // Helper function to get grade from score
   const getGradeFromScore = (score: number): string => {
     if (score >= 80) return "A";
-    if (score >= 75) return "A-";
-    if (score >= 70) return "B+";
-    if (score >= 65) return "B";
-    if (score >= 60) return "B-";
-    if (score >= 55) return "C+";
-    if (score >= 50) return "C";
-    if (score >= 45) return "C-";
-    if (score >= 40) return "D+";
-    if (score >= 35) return "D";
-    if (score >= 30) return "D-";
-    return "E";
+    if (score >= 70) return "B";
+    if (score >= 60) return "C";
+    if (score >= 50) return "D";
+    return "F";
   };
   
-  // Simulate sending SMS with detailed performance data
+  // Updated helper function to calculate points from grade
+  const getPointsFromGrade = (grade: string): number => {
+    switch (grade) {
+      case "A": return 4;
+      case "B": return 3;
+      case "C": return 2;
+      case "D": return 1;
+      case "F": return 0;
+      default: return 0;
+    }
+  };
+
+  // Updated helper function to calculate division from GPA
+  const getDivisionFromGPA = (gpa: number): string => {
+    if (gpa >= 3.5) return "I";
+    if (gpa >= 3.0) return "II";
+    if (gpa >= 2.0) return "III";
+    if (gpa >= 1.0) return "IV";
+    return "F";
+  };
+  
+  // Enhanced SMS function with comprehensive academic data
   const sendSMS = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    // Get performance data for the SMS
-    const performanceSummary = getStudentPerformanceSummary(studentId);
-    const positionInfo = getStudentPositionInfo(studentId);
+    // Get comprehensive performance data for the SMS
+    const performanceData = getStudentPerformanceSummary(studentId);
     const studentName = `${student.firstName} ${student.lastName}`;
     
-    // Create a detailed SMS message with crucial details
+    // Create a detailed SMS message with all key academic metrics
     const smsMessage = 
-      `Academic Report - ${studentName}\n` +
-      `Average: ${performanceSummary.averageScore}%\n` +
-      `Grade: ${performanceSummary.grade}\n` +
-      `Position: ${positionInfo}\n` +
-      `Term ${selectedTerm}, ${selectedYear}\n` +
-      `Contact school for full report.`;
+      `📚 ACADEMIC REPORT - ${studentName}\n` +
+      `📊 Overall Average: ${performanceData.averageScore}%\n` +
+      `🎯 Grade: ${performanceData.grade} | GPA: ${performanceData.gpa}\n` +
+      `🏆 Division: ${performanceData.division}\n` +
+      `📍 Class Position: ${performanceData.position}\n` +
+      `📈 Total Points: ${performanceData.totalPoints}\n\n` +
+      `📋 Subject Performance:\n` +
+      performanceData.subjectBreakdown.slice(0, 5).map(subject => 
+        `• ${subject.subject}: ${subject.average}% *(Grade ${subject.grade})*`
+      ).join('\n') +
+      (performanceData.subjectBreakdown.length > 5 ? '\n...and more subjects' : '') +
+      `\n\n📞 Contact school for full detailed report card.`;
     
-    toast.info(`Sending report to ${student.guardianName} at ${student.guardianPhone}...`);
-    console.log("SMS message content:", smsMessage);
+    toast.info(`Sending comprehensive report to ${student.guardianName} at ${student.guardianPhone}...`);
+    console.log("Enhanced SMS message content:", smsMessage);
     console.log(`Sending from ${senderPhoneNumber} to ${student.guardianPhone}`);
     
     // Simulate API call for SMS
     return new Promise<void>(resolve => {
       setTimeout(() => {
-        toast.success(`Report summary sent to ${student.guardianName} successfully!`);
+        toast.success(`Comprehensive report summary sent to ${student.guardianName} successfully!`);
         resolve();
       }, 2000);
     });
@@ -325,7 +392,7 @@ const Reports: React.FC = () => {
     }
     
     setIsSending(true);
-    toast.info(`Sending reports to ${selectedStudentIds.length} guardians...`);
+    toast.info(`Sending comprehensive reports to ${selectedStudentIds.length} guardians...`);
     
     try {
       // Process in batches of 5 to avoid overwhelming the system
@@ -334,7 +401,7 @@ const Reports: React.FC = () => {
         await Promise.all(batch.map(id => sendSMS(id)));
       }
       
-      toast.success(`Successfully sent ${selectedStudentIds.length} reports!`);
+      toast.success(`Successfully sent ${selectedStudentIds.length} comprehensive reports!`);
     } catch (error) {
       console.error("Error sending batch SMS:", error);
       toast.error("An error occurred while sending reports");
@@ -343,12 +410,12 @@ const Reports: React.FC = () => {
     }
   };
 
-  // Share report via WhatsApp with PDF attachment instructions
+  // Enhanced WhatsApp sharing with comprehensive academic summary and PDF download link
   const shareViaWhatsApp = async (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    // Generate PDF first
+    // Generate PDF first for download link
     const pdfUrl = await generateStudentPDF(true, studentId);
     if (!pdfUrl) {
       toast.error("Failed to generate PDF for sharing");
@@ -356,23 +423,46 @@ const Reports: React.FC = () => {
     }
     
     const studentName = `${student.firstName} ${student.lastName}`;
-    const performanceSummary = getStudentPerformanceSummary(studentId);
+    const performanceData = getStudentPerformanceSummary(studentId);
     
-    // Create message with instructions to attach the downloaded PDF
+    // Create comprehensive WhatsApp message with all academic details
     const message = encodeURIComponent(
-      `Hello ${student.guardianName}, this is an academic report update for ${studentName} - ${selectedYear} Term ${selectedTerm}.\n\n` +
-      `Performance Summary:\n` +
-      `- Average Score: ${performanceSummary.averageScore}%\n` +
-      `- Grade: ${performanceSummary.grade}\n` +
-      `- Class Position: ${getStudentPositionInfo(studentId)}\n\n` +
-      `A detailed PDF report has been prepared for download. Please find the complete report card for review.`
+      `🎓 *ACADEMIC REPORT CARD*\n` +
+      `👩‍🎓 Student: *${studentName}*\n` +
+      `📅 Academic Period: ${selectedYear} Term ${selectedTerm}\n` +
+      `📚 Class: Form ${student.form}${student.stream ? ` ${student.stream}` : ''}\n\n` +
+      
+      `📊 *OVERALL PERFORMANCE SUMMARY:*\n` +
+      `• Overall Average: *${performanceData.averageScore}%*\n` +
+      `• Overall Grade: *${performanceData.grade}*\n` +
+      `• GPA: *${performanceData.gpa}/4.0*\n` +
+      `• Division: *${performanceData.division}*\n` +
+      `• Class Position: *${performanceData.position}*\n` +
+      `• Total Points: *${performanceData.totalPoints}*\n\n` +
+      
+      `📋 *SUBJECT BREAKDOWN:*\n` +
+      performanceData.subjectBreakdown.map(subject => 
+        `• ${subject.subject}: ${subject.average}% *(Grade ${subject.grade})*`
+      ).join('\n') + '\n\n' +
+      
+      `📈 *ACADEMIC INSIGHT:*\n` +
+      `Your child has demonstrated ${performanceData.summary}.\n\n` +
+      
+      `📄 *COMPLETE REPORT CARD:*\n` +
+      `A detailed PDF report card with full academic breakdown, teacher comments, and performance charts has been prepared for download.\n\n` +
+      
+      `📞 For any questions about this report or to schedule a parent-teacher meeting, please contact the school.\n\n` +
+      
+      `🏫 *St. Padre Pio Girls Secondary School*\n` +
+      `📧 st.padrepiogirls@gmail.com\n` +
+      `📱 0682 159 199`
     );
     
-    // Open WhatsApp with pre-filled message to send TO the guardian
+    // Open WhatsApp with comprehensive pre-filled message
     const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
     window.open(whatsappURL, '_blank');
     
-    toast.success(`Opening WhatsApp to send message to ${student.guardianName}. Please share the downloaded PDF separately.`);
+    toast.success(`Opening WhatsApp to send comprehensive report to ${student.guardianName}. The PDF report card is ready for download and sharing.`);
   };
   
   // Share batch reports via WhatsApp
@@ -383,7 +473,7 @@ const Reports: React.FC = () => {
     }
     
     setIsSending(true);
-    toast.info(`Preparing WhatsApp messages for ${selectedStudentIds.length} guardians...`);
+    toast.info(`Preparing comprehensive WhatsApp reports for ${selectedStudentIds.length} guardians...`);
     
     try {
       // Process sequentially as each will open a new window
@@ -508,7 +598,7 @@ const Reports: React.FC = () => {
                     className="bg-blue-500 text-white hover:bg-blue-600 border-0"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    Send SMS Report
+                    Send Comprehensive SMS Report
                   </Button>
                   <Button 
                     variant="outline"
@@ -516,7 +606,7 @@ const Reports: React.FC = () => {
                     className="bg-green-500 text-white hover:bg-green-600 border-0"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    Share via WhatsApp
+                    Share Detailed Report via WhatsApp
                   </Button>
                 </div>
               )}
@@ -568,7 +658,7 @@ const Reports: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    Select students to perform batch operations
+                    Select students to perform batch operations with comprehensive academic summaries
                   </p>
                   <div className="flex gap-2">
                     <Button 
@@ -643,7 +733,7 @@ const Reports: React.FC = () => {
                 {selectedStudentIds.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     <p className="w-full text-sm">
-                      {selectedStudentIds.length} student(s) selected
+                      {selectedStudentIds.length} student(s) selected for comprehensive reporting
                     </p>
                     <Button 
                       onClick={sendBatchSMS}
@@ -651,7 +741,7 @@ const Reports: React.FC = () => {
                       className="bg-blue-500 text-white hover:bg-blue-600"
                     >
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      Send {selectedStudentIds.length} SMS Reports
+                      Send {selectedStudentIds.length} Comprehensive SMS Reports
                     </Button>
                     <Button 
                       className="bg-green-500 text-white hover:bg-green-600"
@@ -659,7 +749,7 @@ const Reports: React.FC = () => {
                       disabled={isSending}
                     >
                       <Send className="mr-2 h-4 w-4" />
-                      Share {selectedStudentIds.length} Reports via WhatsApp
+                      Share {selectedStudentIds.length} Detailed Reports via WhatsApp
                     </Button>
                   </div>
                 )}
@@ -771,7 +861,7 @@ const Reports: React.FC = () => {
                   disabled={isSending}
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  Send Reports to All Form {selectedForm} Guardians
+                  Send Comprehensive Reports to All Form {selectedForm} Guardians
                 </Button>
               </div>
             </CardContent>

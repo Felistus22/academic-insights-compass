@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,42 +12,42 @@ interface StudentReportCardProps {
   term: 1 | 2;
 }
 
-// Helper function to calculate grade, points and remarks based on score
+// Updated helper function to calculate grade, points and remarks based on score
 const calculateGradeInfo = (score: number): { grade: string; points: number; remarks: string } => {
-  if (score >= 74.5) {
-    return { grade: 'A', points: 1, remarks: 'Excellent!' };
-  } else if (score >= 64.5) {
-    return { grade: 'B', points: 2, remarks: 'Good' };
-  } else if (score >= 44.5) {
-    return { grade: 'C', points: 3, remarks: 'Fair' };
-  } else if (score >= 29.5) {
-    return { grade: 'D', points: 4, remarks: 'Needs Improvement' };
+  if (score >= 80) {
+    return { grade: 'A', points: 4, remarks: 'Excellent!' };
+  } else if (score >= 70) {
+    return { grade: 'B', points: 3, remarks: 'Good' };
+  } else if (score >= 60) {
+    return { grade: 'C', points: 2, remarks: 'Fair' };
+  } else if (score >= 50) {
+    return { grade: 'D', points: 1, remarks: 'Needs Improvement' };
   } else {
-    return { grade: 'F', points: 5, remarks: 'Failed' };
+    return { grade: 'F', points: 0, remarks: 'Failed' };
   }
 };
 
-// Helper function to calculate division based on total points
-const calculateDivision = (totalPoints: number): string => {
-  if (totalPoints >= 7 && totalPoints < 18) {
+// Updated helper function to calculate division based on GPA
+const calculateDivision = (gpa: number): string => {
+  if (gpa >= 3.5) {
     return 'I';
-  } else if (totalPoints >= 18 && totalPoints < 22) {
+  } else if (gpa >= 3.0) {
     return 'II';
-  } else if (totalPoints >= 22 && totalPoints < 26) {
+  } else if (gpa >= 2.0) {
     return 'III';
-  } else if (totalPoints >= 26 && totalPoints <= 34) {
+  } else if (gpa >= 1.0) {
     return 'IV';
   } else {
-    return 'ABS';
+    return 'F';
   }
 };
 
 // Helper function to calculate GPA from points
 const calculateGPA = (points: number): number => {
-  if (points === 1) return 4.0;     // A
-  if (points === 2) return 3.0;     // B
-  if (points === 3) return 2.0;     // C
-  if (points === 4) return 1.0;     // D
+  if (points === 4) return 4.0;     // A
+  if (points === 3) return 3.0;     // B
+  if (points === 2) return 2.0;     // C
+  if (points === 1) return 1.0;     // D
   return 0.0;                       // F
 };
 
@@ -238,21 +237,21 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
     const totalMarks = subjectValues.reduce((sum, avg) => sum + avg, 0);
     const averageMark = subjectValues.length > 0 ? Math.round(totalMarks / subjectValues.length) : 0;
     
-    // Calculate total points using the helper function
+    // Calculate total points and GPA using the new grading system
     let totalPoints = 0;
+    let totalGpaPoints = 0;
     const subjectGrades: Record<string, { grade: string; points: number; remarks: string }> = {};
     
     Object.entries(subjectAverages).forEach(([subjectId, average]) => {
       const gradeInfo = calculateGradeInfo(average);
       subjectGrades[subjectId] = gradeInfo;
       totalPoints += gradeInfo.points;
+      totalGpaPoints += calculateGPA(gradeInfo.points);
     });
     
-    // Calculate division and GPA
-    const division = calculateDivision(totalPoints);
-    const gpa = subjectValues.length > 0 
-      ? subjectValues.reduce((sum, mark) => sum + calculateGPA(calculateGradeInfo(mark).points), 0) / subjectValues.length
-      : 0;
+    // Calculate GPA and division
+    const gpa = subjectValues.length > 0 ? totalGpaPoints / subjectValues.length : 0;
+    const division = calculateDivision(gpa);
     
     return {
       totalMarks,
@@ -478,7 +477,7 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <div className="col-span-3">
             <div className="border border-foreground p-2">
               <div><span className="font-medium">T.Points:</span> {performanceMetrics.totalPoints}</div>
-              <div><span className="font-medium">Avg.Points:</span> {(performanceMetrics.totalPoints / Object.keys(subjectAverages).length || 0).toFixed(3)}</div>
+              <div><span className="font-medium">Avg.Points:</span> {(performanceMetrics.totalPoints / Object.keys(subjectAverages).length || 0).toFixed(1)}</div>
               <div><span className="font-medium">M.Grade:</span> {calculateGradeInfo(performanceMetrics.averageMark).grade}</div>
             </div>
           </div>
