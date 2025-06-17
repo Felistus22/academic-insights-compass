@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -359,10 +360,10 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
               <p>ARUSHA-TANZANIA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; E-mail:- st.padrepiogirls@gmail.com</p>
             </div>
           </div>
-          {/* School Logo on the right */}
+          {/* St. Padre Pio School Logo on the right */}
           <div className="flex items-center gap-4">
             <Image 
-              src="/lovable-uploads/5f64003b-6ab3-4638-aea6-83966311d310.png"
+              src="/lovable-uploads/40c13983-fd2d-4a30-b15f-2fde2ace8f2f.png"
               alt="St Padre Pio Girls School Logo"
               className="h-16 w-16 object-contain"
             />
