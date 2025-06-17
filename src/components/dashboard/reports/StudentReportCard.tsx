@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -388,28 +387,29 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           </div>
         </div>
 
-        {/* Subject Performance Table - Updated structure as per attachment */}
+        {/* Subject Performance Table - Updated with new column structure */}
         <div className="border-2 border-foreground mb-6">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-foreground">
                 <th className="border-r border-foreground px-2 py-1 text-left bg-muted">SUBJECT</th>
-                {relevantExams.map((exam, index) => (
+                {relevantExams.map((exam) => (
                   <th key={exam.id} className="border-r border-foreground px-1 py-1 text-center bg-muted min-w-[50px]">
                     {exam.type === "Custom" ? exam.name.slice(0, 6) : exam.type.slice(0, 6)}
                   </th>
                 ))}
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">S.Mean</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Grade</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Position</th>
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Entry</th>
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Average</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Grade</th>
                 <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Points</th>
                 <th className="border-r border-foreground px-2 py-1 text-center bg-muted">COMMENT BY SUBJECT</th>
                 <th className="px-2 py-1 text-center bg-muted">INITIAL</th>
               </tr>
             </thead>
             <tbody>
-              {subjects.map((subject, index) => {
+              {subjects.map((subject) => {
                 const average = subjectAverages[subject.id] || 0;
                 const gradeInfo = performanceMetrics.subjectGrades[subject.id] || { grade: "N/A", points: 0, remarks: "N/A" };
                 const subjectMean = subjectMeans[subject.id] || 0;
@@ -434,14 +434,17 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
                     <td className="border-r border-foreground px-1 py-1 text-center">
                       {subjectMean || "-"}
                     </td>
-                    <td className="border-r border-foreground px-1 py-1 text-center font-medium">
-                      {gradeInfo.grade}
+                    <td className="border-r border-foreground px-1 py-1 text-center">
+                      {rank || "-"}
                     </td>
                     <td className="border-r border-foreground px-1 py-1 text-center">
                       {entry}
                     </td>
                     <td className="border-r border-foreground px-1 py-1 text-center font-medium">
                       {average || "-"}
+                    </td>
+                    <td className="border-r border-foreground px-1 py-1 text-center font-medium">
+                      {gradeInfo.grade}
                     </td>
                     <td className="border-r border-foreground px-1 py-1 text-center font-medium">
                       {gradeInfo.points}
