@@ -19,40 +19,41 @@ const DashboardHome: React.FC = () => {
   const totalSubjects = subjects.length;
   const totalExams = exams.length;
 
-  // Quick actions for different user roles
-  const quickActions = [
+  // Quick actions for different user roles - filtered based on role
+  const allQuickActions = [
     {
       title: "Add New Student",
       description: "Register a new student",
       icon: Plus,
       action: () => navigate("/dashboard/students"),
-      adminOnly: true
+      roles: ["admin"]
     },
     {
       title: "Enter Marks",
       description: "Record student examination marks",
       icon: FileText,
       action: () => navigate("/dashboard/enter-marks"),
-      adminOnly: false
+      roles: ["admin", "teacher"]
     },
     {
       title: "View Reports",
       description: "Generate student performance reports",
       icon: TrendingUp,
       action: () => navigate("/dashboard/reports"),
-      adminOnly: false
+      roles: ["admin", "teacher"]
     },
     {
       title: "Manage Teachers",
       description: "Add or edit teacher information",
       icon: GraduationCap,
       action: () => navigate("/dashboard/teachers"),
-      adminOnly: true
+      roles: ["admin"]
     }
   ];
 
-  const availableActions = quickActions.filter(action => 
-    !action.adminOnly || currentTeacher?.role === "admin"
+  // Filter quick actions based on current user's role
+  const availableActions = allQuickActions.filter(action => 
+    currentTeacher && action.roles.includes(currentTeacher.role)
   );
 
   // Students by form distribution with proper labeling (changed to bar chart data)
@@ -149,10 +150,11 @@ const DashboardHome: React.FC = () => {
         </h2>
         <p className="text-muted-foreground">
           Here's what's happening at your school today.
+          {currentTeacher?.role === "teacher" && " (Teacher View)"}
         </p>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Role filtered */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {availableActions.map((action) => {
           const Icon = action.icon;
@@ -172,7 +174,7 @@ const DashboardHome: React.FC = () => {
         })}
       </div>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards - Show all for now but could be filtered */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -187,18 +189,20 @@ const DashboardHome: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Teachers</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalTeachers}</div>
-            <p className="text-xs text-muted-foreground">
-              Faculty members
-            </p>
-          </CardContent>
-        </Card>
+        {currentTeacher?.role === "admin" && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Teachers</CardTitle>
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalTeachers}</div>
+              <p className="text-xs text-muted-foreground">
+                Faculty members
+              </p>
+            </CardContent>
+          </Card>
+        )}
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

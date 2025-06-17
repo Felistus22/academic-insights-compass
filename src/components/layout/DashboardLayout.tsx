@@ -42,16 +42,22 @@ const DashboardLayout: React.FC = () => {
     navigate("/");
   };
 
-  const navigationItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Users, label: "Students", path: "/dashboard/students" },
-    { icon: UserCheck, label: "Teachers", path: "/dashboard/teachers" },
-    { icon: BookOpen, label: "Subjects", path: "/dashboard/subjects" },
-    { icon: ClipboardList, label: "Enter Marks", path: "/dashboard/enter-marks" },
-    { icon: FileText, label: "Reports", path: "/dashboard/reports" },
-    { icon: CreditCard, label: "Fee Management", path: "/dashboard/fees" },
-    { icon: Activity, label: "Activity Logs", path: "/dashboard/activity-logs" },
+  // Define all navigation items with role restrictions
+  const allNavigationItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", roles: ["admin", "teacher"] },
+    { icon: Users, label: "Students", path: "/dashboard/students", roles: ["admin"] },
+    { icon: UserCheck, label: "Teachers", path: "/dashboard/teachers", roles: ["admin"] },
+    { icon: BookOpen, label: "Subjects", path: "/dashboard/subjects", roles: ["admin"] },
+    { icon: ClipboardList, label: "Enter Marks", path: "/dashboard/enter-marks", roles: ["admin", "teacher"] },
+    { icon: FileText, label: "Reports", path: "/dashboard/reports", roles: ["admin", "teacher"] },
+    { icon: CreditCard, label: "Fee Management", path: "/dashboard/fees", roles: ["admin"] },
+    { icon: Activity, label: "Activity Logs", path: "/dashboard/activity-logs", roles: ["admin"] },
   ];
+
+  // Filter navigation items based on current user's role
+  const navigationItems = allNavigationItems.filter(item => 
+    currentTeacher && item.roles.includes(currentTeacher.role)
+  );
 
   return (
     <div className="flex h-screen bg-background">
