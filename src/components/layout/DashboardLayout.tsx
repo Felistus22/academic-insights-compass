@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, LogOut, User } from "lucide-react";

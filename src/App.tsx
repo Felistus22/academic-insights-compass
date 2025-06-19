@@ -8,15 +8,6 @@ import { SupabaseAppProvider } from "./contexts/SupabaseAppContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import DashboardHome from "./components/dashboard/DashboardHome";
-import Students from "./components/dashboard/Students";
-import ManageTeachers from "./components/dashboard/ManageTeachers";
-import ManageSubjects from "./components/dashboard/ManageSubjects";
-import EnterMarks from "./components/dashboard/EnterMarks";
-import Reports from "./components/dashboard/Reports";
-import FeeManagement from "./components/dashboard/FeeManagement";
-import ActivityLogs from "./components/dashboard/ActivityLogs";
-import "./App.css";
 
 const queryClient = new QueryClient();
 
@@ -29,16 +20,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<DashboardLayout />}>
-                  <Route index element={<DashboardHome />} />
-                  <Route path="students" element={<Students />} />
-                  <Route path="teachers" element={<ManageTeachers />} />
-                  <Route path="subjects" element={<ManageSubjects />} />
-                  <Route path="enter-marks" element={<EnterMarks />} />
-                  <Route path="reports" element={<Reports />} />
-                  <Route path="fees" element={<FeeManagement />} />
-                  <Route path="activity-logs" element={<ActivityLogs />} />
-                </Route>
+                <Route path="/dashboard/*" element={<DashboardLayout />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
