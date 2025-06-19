@@ -425,7 +425,7 @@ const Reports: React.FC = () => {
     const studentName = `${student.firstName} ${student.lastName}`;
     const performanceData = getStudentPerformanceSummary(studentId);
     
-    // Create comprehensive WhatsApp message with all academic details
+    // Create comprehensive WhatsApp message with all academic details and PDF download link
     const message = encodeURIComponent(
       `🎓 *ACADEMIC REPORT CARD*\n` +
       `👩‍🎓 Student: *${studentName}*\n` +
@@ -450,6 +450,8 @@ const Reports: React.FC = () => {
       
       `📄 *COMPLETE REPORT CARD:*\n` +
       `A detailed PDF report card with full academic breakdown, teacher comments, and performance charts has been prepared for download.\n\n` +
+      
+      `📎 *DOWNLOAD LINK:* ${pdfUrl}\n\n` +
       
       `📞 For any questions about this report or to schedule a parent-teacher meeting, please contact the school.\n\n` +
       
