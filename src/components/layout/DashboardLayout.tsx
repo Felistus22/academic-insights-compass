@@ -1,157 +1,143 @@
 
 import React, { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  LayoutDashboard, 
-  Users, 
-  BookOpen, 
-  FileText, 
-  Settings, 
-  LogOut,
-  UserCheck,
-  ClipboardList,
-  Activity,
-  CreditCard,
-  User,
-  Edit
-} from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, LogOut, User } from "lucide-react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
-import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
+import NavigationItems from "./NavigationItems";
+import AdminDashboard from "../dashboard/AdminDashboard";
+import TeacherDashboard from "../dashboard/TeacherDashboard";
 
 const DashboardLayout: React.FC = () => {
   const { currentTeacher, logout } = useSupabaseAppContext();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  if (!currentTeacher) {
+    return <Navigate to="/" replace />;
+  }
+
+  const isAdmin = currentTeacher.role === "admin";
 
   const handleLogout = () => {
     logout();
-    toast.success("Logged out successfully");
-    navigate("/");
   };
 
-  // Define all navigation items with role restrictions
-  const allNavigationItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", roles: ["admin", "teacher"] },
-    { icon: Users, label: "Students", path: "/dashboard/students", roles: ["admin"] },
-    { icon: UserCheck, label: "Teachers", path: "/dashboard/teachers", roles: ["admin"] },
-    { icon: BookOpen, label: "Subjects", path: "/dashboard/subjects", roles: ["admin"] },
-    { icon: ClipboardList, label: "Enter Marks", path: "/dashboard/enter-marks", roles: ["admin", "teacher"] },
-    { icon: FileText, label: "Reports", path: "/dashboard/reports", roles: ["admin", "teacher"] },
-    { icon: CreditCard, label: "Fee Management", path: "/dashboard/fees", roles: ["admin"] },
-    { icon: Activity, label: "Activity Logs", path: "/dashboard/activity-logs", roles: ["admin"] },
-  ];
-
-  // Filter navigation items based on current user's role
-  const navigationItems = allNavigationItems.filter(item => 
-    currentTeacher && item.roles.includes(currentTeacher.role)
-  );
-
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 bg-muted border-r border-border flex flex-col`}>
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">SM</span>
-            </div>
-            {!isSidebarCollapsed && (
-              <span className="font-semibold text-lg">School Management</span>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Navigation */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between p-4 bg-white shadow-sm">
+          <h1 className="text-xl font-semibold">School Management</h1>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64">
+              <div className="py-4">
+                <NavigationItems />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-        
-        <nav className="flex-1 p-4 space-y-2">
-          {navigationItems.map((item) => (
-            <Button
-              key={item.path}
-              variant={location.pathname === item.path ? "default" : "ghost"}
-              className={`${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} w-full`}
-              onClick={() => navigate(item.path)}
-            >
-              <item.icon className={`h-4 w-4 ${!isSidebarCollapsed && 'mr-2'}`} />
-              {!isSidebarCollapsed && item.label}
-            </Button>
-          ))}
-        </nav>
-        
-        <div className="p-4 border-t border-border">
-          <Button
-            variant="ghost"
-            className={`${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} w-full text-destructive hover:text-destructive`}
-            onClick={handleLogout}
-          >
-            <LogOut className={`h-4 w-4 ${!isSidebarCollapsed && 'mr-2'}`} />
-            {!isSidebarCollapsed && "Logout"}
-          </Button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Welcome, {currentTeacher?.firstName} {currentTeacher?.lastName}
-                  </span>
-                  <Avatar>
-                    <AvatarFallback>
-                      {currentTeacher?.firstName?.charAt(0)}{currentTeacher?.lastName?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsProfileDialogOpen(true)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
-        </main>
       </div>
 
-      <ProfileEditDialog 
-        open={isProfileDialogOpen} 
-        onOpenChange={setIsProfileDialogOpen} 
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+          <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white shadow-sm">
+            <div className="flex items-center flex-shrink-0 px-4">
+              <h1 className="text-xl font-semibold text-gray-900">
+                School Management
+              </h1>
+            </div>
+            <div className="mt-8 flex-grow flex flex-col">
+              <div className="px-4">
+                <NavigationItems />
+              </div>
+              <div className="mt-auto px-4 py-4 border-t">
+                <div className="flex items-center">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {currentTeacher.firstName} {currentTeacher.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {currentTeacher.role}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsProfileOpen(true)}
+                    >
+                      <User className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:pl-64 flex flex-col flex-1">
+          <main className="flex-1">
+            <div className="py-6">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {isAdmin ? <AdminDashboard /> : <TeacherDashboard />}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+
+      {/* Profile Edit Dialog */}
+      <ProfileEditDialog
+        open={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
       />
+
+      {/* Mobile Bottom Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t">
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900">
+              {currentTeacher.firstName} {currentTeacher.lastName}
+            </p>
+            <p className="text-xs text-gray-500 capitalize">
+              {currentTeacher.role}
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsProfileOpen(true)}
+            >
+              <User className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
