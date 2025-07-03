@@ -25,7 +25,7 @@ const DashboardHome: React.FC = () => {
       title: "Add New Student",
       description: "Register a new student",
       icon: Plus,
-      action: () => navigate("/dashboard/students"),
+      action: () => navigate("/dashboard/manage-students"),
       roles: ["admin"]
     },
     {
@@ -46,7 +46,7 @@ const DashboardHome: React.FC = () => {
       title: "Manage Teachers",
       description: "Add or edit teacher information",
       icon: GraduationCap,
-      action: () => navigate("/dashboard/teachers"),
+      action: () => navigate("/dashboard/manage-teachers"),
       roles: ["admin"]
     }
   ];
