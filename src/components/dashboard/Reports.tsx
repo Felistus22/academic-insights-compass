@@ -874,6 +874,7 @@ const Reports: React.FC = () => {
               form={parseInt(selectedForm)}
               year={parseInt(selectedYear)}
               term={parseInt(selectedTerm) as 1 | 2}
+              stream={selectedStream}
             />
           </div>
         </TabsContent>
