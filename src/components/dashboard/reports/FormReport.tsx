@@ -51,13 +51,9 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
     }
   };
 
-  // Calculate GPA from points
-  const calculateGPA = (points: number): number => {
-    if (points === 4) return 4.0;     // A
-    if (points === 3) return 3.0;     // B
-    if (points === 2) return 2.0;     // C
-    if (points === 1) return 1.0;     // D
-    return 0.0;                       // F
+  // Calculate GPA from average points (just convert points to GPA scale)
+  const calculateGPA = (averagePoints: number): number => {
+    return Math.round(averagePoints * 100) / 100;
   };
 
   // Calculate division from GPA
@@ -94,13 +90,14 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
           points
         };
         totalScore += avgScore;
-        totalGpaPoints += calculateGPA(points);
+        totalGpaPoints += points;
         subjectCount++;
       }
     });
 
     const overallAverage = subjectCount > 0 ? Math.round(totalScore / subjectCount) : 0;
-    const gpa = subjectCount > 0 ? totalGpaPoints / subjectCount : 0;
+    const averagePoints = subjectCount > 0 ? totalGpaPoints / subjectCount : 0;
+    const gpa = calculateGPA(averagePoints);
     const division = calculateDivision(gpa);
     const totalPoints = Object.values(subjectScores).reduce((sum, s) => sum + s.points, 0);
 
@@ -110,7 +107,7 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
       overallAverage,
       overallGrade: getGradeFromScore(overallAverage),
       totalPoints,
-      gpa: Math.round(gpa * 100) / 100,
+      gpa,
       division
     };
   });
@@ -220,7 +217,7 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
                         </TableCell>
                       ))}
                       <TableCell className="text-center font-semibold">
-                        {performance.totalPoints}
+                        {Object.values(performance.subjectScores).reduce((sum, s) => sum + s.score, 0)}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={getScoreColor(performance.overallAverage)}>
