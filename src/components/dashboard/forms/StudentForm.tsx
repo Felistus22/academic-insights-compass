@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Student } from "@/types";
-import { useAppContext } from "@/contexts/AppContext";
+import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 
 // Define the schema for student form validation
 const studentSchema = z.object({
@@ -34,7 +34,7 @@ interface StudentFormProps {
 }
 
 const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess }) => {
-  const { addStudent, updateStudent } = useAppContext();
+  const { addStudent, updateStudent } = useSupabaseAppContext();
   const isEditing = !!student;
 
   const form = useForm<StudentFormValues>({
@@ -67,10 +67,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ student, onCancel, onSuccess 
     };
 
     if (isEditing && student) {
-      updateStudent({
-        ...student,
-        ...data
-      });
+      updateStudent(student.id, data);
     } else {
       addStudent(studentData);
     }
