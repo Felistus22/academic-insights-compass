@@ -39,10 +39,41 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
     return "F";
   };
 
+  // Get points from grade
+  const getPointsFromGrade = (grade: string): number => {
+    switch (grade) {
+      case "A": return 4;
+      case "B": return 3;
+      case "C": return 2;
+      case "D": return 1;
+      case "F": return 0;
+      default: return 0;
+    }
+  };
+
+  // Calculate GPA from points
+  const calculateGPA = (points: number): number => {
+    if (points === 4) return 4.0;     // A
+    if (points === 3) return 3.0;     // B
+    if (points === 2) return 2.0;     // C
+    if (points === 1) return 1.0;     // D
+    return 0.0;                       // F
+  };
+
+  // Calculate division from GPA
+  const calculateDivision = (gpa: number): string => {
+    if (gpa >= 3.5) return "I";
+    if (gpa >= 3.0) return "II";
+    if (gpa >= 2.0) return "III";
+    if (gpa >= 1.0) return "IV";
+    return "F";
+  };
+
   // Calculate detailed performance for each student
   const studentPerformances = formStudents.map(student => {
-    const subjectScores: Record<string, { score: number; grade: string }> = {};
+    const subjectScores: Record<string, { score: number; grade: string; points: number }> = {};
     let totalScore = 0;
+    let totalGpaPoints = 0;
     let subjectCount = 0;
 
     subjects.forEach(subject => {
@@ -54,26 +85,33 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
 
       if (subjectMarks.length > 0) {
         const avgScore = Math.round(subjectMarks.reduce((sum, mark) => sum + mark.score, 0) / subjectMarks.length);
+        const grade = getGradeFromScore(avgScore);
+        const points = getPointsFromGrade(grade);
+        
         subjectScores[subject.id] = {
           score: avgScore,
-          grade: getGradeFromScore(avgScore)
+          grade,
+          points
         };
         totalScore += avgScore;
+        totalGpaPoints += calculateGPA(points);
         subjectCount++;
       }
     });
 
     const overallAverage = subjectCount > 0 ? Math.round(totalScore / subjectCount) : 0;
+    const gpa = subjectCount > 0 ? totalGpaPoints / subjectCount : 0;
+    const division = calculateDivision(gpa);
+    const totalPoints = Object.values(subjectScores).reduce((sum, s) => sum + s.points, 0);
 
     return {
       student,
       subjectScores,
       overallAverage,
       overallGrade: getGradeFromScore(overallAverage),
-      totalPoints: Object.values(subjectScores).reduce((sum, s) => {
-        const points = s.grade === 'A' ? 4 : s.grade === 'B' ? 3 : s.grade === 'C' ? 2 : s.grade === 'D' ? 1 : 0;
-        return sum + points;
-      }, 0)
+      totalPoints,
+      gpa: Math.round(gpa * 100) / 100,
+      division
     };
   });
 
@@ -158,6 +196,8 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
                     <TableHead className="text-center">Average</TableHead>
                     <TableHead className="text-center">Grade</TableHead>
                     <TableHead className="text-center">Points</TableHead>
+                    <TableHead className="text-center">GPA</TableHead>
+                    <TableHead className="text-center">Division</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -196,6 +236,16 @@ const FormReport: React.FC<FormReportProps> = ({ form, year, term, stream }) => 
                       </TableCell>
                       <TableCell className="text-center font-semibold">
                         {performance.totalPoints}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold">
+                        {performance.gpa}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={performance.division === 'I' ? 'default' : 
+                                      performance.division === 'II' ? 'secondary' : 
+                                      performance.division === 'III' ? 'outline' : 'destructive'}>
+                          {performance.division}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
