@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, LogOut, User } from "lucide-react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
+import { OfflineIndicator } from "@/components/ui/offline-indicator";
 import NavigationItems from "./NavigationItems";
 import AdminDashboard from "../dashboard/AdminDashboard";
 import TeacherDashboard from "../dashboard/TeacherDashboard";
@@ -96,6 +97,9 @@ const DashboardLayout: React.FC = () => {
           <main className="flex-1">
             <div className="py-6">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Offline Indicator */}
+                <OfflineIndicator className="mb-4" />
+                
                 {isAdmin ? <AdminDashboard /> : <TeacherDashboard />}
               </div>
             </div>

@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { DataService } from "@/services/dataService";
+import { OfflineStorageService } from "@/services/offlineStorage";
+import { SyncService } from "@/services/syncService";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { toast } from "sonner";
 
@@ -19,6 +22,11 @@ interface AppContextType {
   // Loading states
   isLoading: boolean;
   isMigrated: boolean;
+  
+  // Network state
+  isOnline: boolean;
+  wasOffline: boolean;
+  markSyncHandled: () => void;
 
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
@@ -71,6 +79,9 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrated, setIsMigrated] = useState(false); // Start with false to check properly
+  
+  // Network status
+  const { isOnline, wasOffline, markSyncHandled } = useNetworkStatus();
 
   // Check if data exists in database
   const checkIfDataMigrated = async () => {
@@ -98,45 +109,87 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     }
   };
 
-  // Load all data from Supabase
+  // Load all data (from online or offline storage)
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      console.log("Refreshing data from database...");
-      const [
-        studentsData,
-        teachersData,
-        subjectsData,
-        examsData,
-        marksData,
-        activityLogsData
-      ] = await Promise.all([
-        DataService.fetchStudents(),
-        DataService.fetchTeachers(),
-        DataService.fetchSubjects(),
-        DataService.fetchExams(),
-        DataService.fetchMarks(),
-        DataService.fetchActivityLogs()
-      ]);
+      if (isOnline) {
+        console.log("Refreshing data from database...");
+        const [
+          studentsData,
+          teachersData,
+          subjectsData,
+          examsData,
+          marksData,
+          activityLogsData
+        ] = await Promise.all([
+          DataService.fetchStudents(),
+          DataService.fetchTeachers(),
+          DataService.fetchSubjects(),
+          DataService.fetchExams(),
+          DataService.fetchMarks(),
+          DataService.fetchActivityLogs()
+        ]);
 
-      console.log("Data loaded:", {
-        students: studentsData.length,
-        teachers: teachersData.length,
-        subjects: subjectsData.length,
-        exams: examsData.length,
-        marks: marksData.length,
-        activityLogs: activityLogsData.length
-      });
+        console.log("Data loaded from online:", {
+          students: studentsData.length,
+          teachers: teachersData.length,
+          subjects: subjectsData.length,
+          exams: examsData.length,
+          marks: marksData.length,
+          activityLogs: activityLogsData.length
+        });
 
-      setStudents(studentsData);
-      setTeachers(teachersData);
-      setSubjects(subjectsData);
-      setExams(examsData);
-      setMarks(marksData);
-      setActivityLogs(activityLogsData);
+        // Cache data for offline access
+        await OfflineStorageService.cacheOnlineData({
+          students: studentsData,
+          teachers: teachersData,
+          subjects: subjectsData,
+          exams: examsData,
+          marks: marksData,
+          activityLogs: activityLogsData
+        });
+
+        setStudents(studentsData);
+        setTeachers(teachersData);
+        setSubjects(subjectsData);
+        setExams(examsData);
+        setMarks(marksData);
+        setActivityLogs(activityLogsData);
+      } else {
+        console.log("Loading data from offline storage...");
+        const [
+          studentsData,
+          teachersData,
+          subjectsData,
+          examsData,
+          marksData
+        ] = await Promise.all([
+          OfflineStorageService.getAllStudents(),
+          OfflineStorageService.getAllTeachers(),
+          OfflineStorageService.getAllSubjects(),
+          OfflineStorageService.getAllExams(),
+          OfflineStorageService.getAllMarks()
+        ]);
+
+        console.log("Data loaded from offline:", {
+          students: studentsData.length,
+          teachers: teachersData.length,
+          subjects: subjectsData.length,
+          exams: examsData.length,
+          marks: marksData.length
+        });
+
+        setStudents(studentsData);
+        setTeachers(teachersData);
+        setSubjects(subjectsData);
+        setExams(examsData);
+        setMarks(marksData);
+        setActivityLogs([]); // Activity logs not cached offline
+      }
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Failed to load data from database");
+      toast.error("Failed to load data");
     } finally {
       setIsLoading(false);
     }
@@ -168,17 +221,38 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     }
   };
 
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (wasOffline && isOnline) {
+      console.log("Connection restored, attempting auto-sync...");
+      SyncService.syncAllData().then(() => {
+        // Refresh data after sync
+        refreshData();
+      });
+    }
+  }, [isOnline, wasOffline]);
+
+  // Refresh data when network status changes
+  useEffect(() => {
+    refreshData();
+  }, [isOnline]);
+
   // Initialize data on component mount
   useEffect(() => {
     const initializeData = async () => {
       console.log("Initializing application data...");
-      const migrated = await checkIfDataMigrated();
-      if (migrated) {
-        console.log("Data exists, loading...");
-        await refreshData();
+      if (isOnline) {
+        const migrated = await checkIfDataMigrated();
+        if (migrated) {
+          console.log("Data exists, loading...");
+          await refreshData();
+        } else {
+          console.log("No data found, showing migration prompt");
+          setIsLoading(false);
+        }
       } else {
-        console.log("No data found, showing migration prompt");
-        setIsLoading(false);
+        console.log("Offline mode, loading cached data...");
+        await refreshData();
       }
     };
 
@@ -207,77 +281,175 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     toast.info("Logged out successfully");
   };
 
-  // Student management
+  // Student management (offline-aware)
   const addStudent = async (studentData: Omit<Student, 'id'>) => {
-    const newStudent = await DataService.addStudent(studentData);
-    if (newStudent) {
-      setStudents(prev => [...prev, newStudent]);
-      toast.success("Student added successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const newStudent = await DataService.addStudent(studentData);
+        if (newStudent) {
+          setStudents(prev => [...prev, newStudent]);
+          toast.success("Student added successfully");
+        } else {
+          toast.error("Failed to add student");
+        }
+      } else {
+        const newStudent = await OfflineStorageService.addStudentOffline(studentData);
+        setStudents(prev => [...prev, {
+          id: newStudent.id,
+          firstName: newStudent.firstName,
+          lastName: newStudent.lastName,
+          admissionNumber: newStudent.admissionNumber,
+          form: newStudent.form,
+          stream: newStudent.stream,
+          guardianName: newStudent.guardianName,
+          guardianPhone: newStudent.guardianPhone,
+          imageUrl: newStudent.imageUrl
+        }]);
+        toast.success("Student added (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error adding student:", error);
       toast.error("Failed to add student");
     }
   };
 
   const updateStudent = async (id: string, studentData: Partial<Student>) => {
-    const success = await DataService.updateStudent(id, studentData);
-    if (success) {
-      setStudents(prev => prev.map(s => s.id === id ? { ...s, ...studentData } : s));
-      toast.success("Student updated successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const success = await DataService.updateStudent(id, studentData);
+        if (success) {
+          setStudents(prev => prev.map(s => s.id === id ? { ...s, ...studentData } : s));
+          toast.success("Student updated successfully");
+        } else {
+          toast.error("Failed to update student");
+        }
+      } else {
+        await OfflineStorageService.updateStudentOffline(id, studentData);
+        setStudents(prev => prev.map(s => s.id === id ? { ...s, ...studentData } : s));
+        toast.success("Student updated (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error updating student:", error);
       toast.error("Failed to update student");
     }
   };
 
   const deleteStudent = async (id: string) => {
-    const success = await DataService.deleteStudent(id);
-    if (success) {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      toast.success("Student deleted successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const success = await DataService.deleteStudent(id);
+        if (success) {
+          setStudents(prev => prev.filter(s => s.id !== id));
+          toast.success("Student deleted successfully");
+        } else {
+          toast.error("Failed to delete student");
+        }
+      } else {
+        await OfflineStorageService.deleteStudentOffline(id);
+        setStudents(prev => prev.filter(s => s.id !== id));
+        toast.success("Student deleted (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error deleting student:", error);
       toast.error("Failed to delete student");
     }
   };
 
-  // Teacher management
+  // Teacher management (offline-aware)
   const addTeacher = async (teacherData: Omit<Teacher, 'id'>) => {
-    const newTeacher = await DataService.addTeacher(teacherData);
-    if (newTeacher) {
-      setTeachers(prev => [...prev, newTeacher]);
-      toast.success("Teacher added successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const newTeacher = await DataService.addTeacher(teacherData);
+        if (newTeacher) {
+          setTeachers(prev => [...prev, newTeacher]);
+          toast.success("Teacher added successfully");
+        } else {
+          toast.error("Failed to add teacher");
+        }
+      } else {
+        const newTeacher = await OfflineStorageService.addTeacherOffline(teacherData);
+        setTeachers(prev => [...prev, {
+          id: newTeacher.id,
+          firstName: newTeacher.firstName,
+          lastName: newTeacher.lastName,
+          email: newTeacher.email,
+          passwordHash: newTeacher.passwordHash,
+          role: newTeacher.role,
+          subjectIds: newTeacher.subjectIds
+        }]);
+        toast.success("Teacher added (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error adding teacher:", error);
       toast.error("Failed to add teacher");
     }
   };
 
   const updateTeacher = async (id: string, teacherData: Partial<Teacher>) => {
-    const success = await DataService.updateTeacher(id, teacherData);
-    if (success) {
-      setTeachers(prev => prev.map(t => t.id === id ? { ...t, ...teacherData } : t));
-      toast.success("Teacher updated successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const success = await DataService.updateTeacher(id, teacherData);
+        if (success) {
+          setTeachers(prev => prev.map(t => t.id === id ? { ...t, ...teacherData } : t));
+          toast.success("Teacher updated successfully");
+        } else {
+          toast.error("Failed to update teacher");
+        }
+      } else {
+        await OfflineStorageService.updateTeacherOffline(id, teacherData);
+        setTeachers(prev => prev.map(t => t.id === id ? { ...t, ...teacherData } : t));
+        toast.success("Teacher updated (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error updating teacher:", error);
       toast.error("Failed to update teacher");
     }
   };
 
   const deleteTeacher = async (id: string) => {
-    const success = await DataService.deleteTeacher(id);
-    if (success) {
-      setTeachers(prev => prev.filter(t => t.id !== id));
-      toast.success("Teacher deleted successfully");
-    } else {
+    try {
+      if (isOnline) {
+        const success = await DataService.deleteTeacher(id);
+        if (success) {
+          setTeachers(prev => prev.filter(t => t.id !== id));
+          toast.success("Teacher deleted successfully");
+        } else {
+          toast.error("Failed to delete teacher");
+        }
+      } else {
+        await OfflineStorageService.deleteTeacherOffline(id);
+        setTeachers(prev => prev.filter(t => t.id !== id));
+        toast.success("Teacher deleted (will sync when online)");
+      }
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
       toast.error("Failed to delete teacher");
     }
   };
 
-  // Mark management
+  // Mark management (offline-aware)
   const addMark = async (markData: Omit<Mark, 'id'>) => {
     try {
-      const newMark = await DataService.addMark(markData);
-      if (newMark) {
-        setMarks(prev => [...prev, newMark]);
-        toast.success("Mark added successfully");
+      if (isOnline) {
+        const newMark = await DataService.addMark(markData);
+        if (newMark) {
+          setMarks(prev => [...prev, newMark]);
+          toast.success("Mark added successfully");
+        } else {
+          toast.error("Failed to add mark");
+        }
       } else {
-        toast.error("Failed to add mark");
+        const newMark = await OfflineStorageService.addMarkOffline(markData);
+        setMarks(prev => [...prev, {
+          id: newMark.id,
+          studentId: newMark.studentId,
+          subjectId: newMark.subjectId,
+          examId: newMark.examId,
+          score: newMark.score,
+          grade: newMark.grade,
+          remarks: newMark.remarks
+        }]);
+        toast.success("Mark added (will sync when online)");
       }
     } catch (error) {
       console.error("Error adding mark:", error);
@@ -287,12 +459,18 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
 
   const updateMark = async (mark: Mark) => {
     try {
-      const success = await DataService.updateMark(mark.id, mark);
-      if (success) {
-        setMarks(prev => prev.map(m => m.id === mark.id ? mark : m));
-        toast.success("Mark updated successfully");
+      if (isOnline) {
+        const success = await DataService.updateMark(mark.id, mark);
+        if (success) {
+          setMarks(prev => prev.map(m => m.id === mark.id ? mark : m));
+          toast.success("Mark updated successfully");
+        } else {
+          toast.error("Failed to update mark");
+        }
       } else {
-        toast.error("Failed to update mark");
+        await OfflineStorageService.updateMarkOffline(mark);
+        setMarks(prev => prev.map(m => m.id === mark.id ? mark : m));
+        toast.success("Mark updated (will sync when online)");
       }
     } catch (error) {
       console.error("Error updating mark:", error);
@@ -302,12 +480,18 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
 
   const deleteMark = async (id: string) => {
     try {
-      const success = await DataService.deleteMark(id);
-      if (success) {
-        setMarks(prev => prev.filter(m => m.id !== id));
-        toast.success("Mark deleted successfully");
+      if (isOnline) {
+        const success = await DataService.deleteMark(id);
+        if (success) {
+          setMarks(prev => prev.filter(m => m.id !== id));
+          toast.success("Mark deleted successfully");
+        } else {
+          toast.error("Failed to delete mark");
+        }
       } else {
-        toast.error("Failed to delete mark");
+        await OfflineStorageService.deleteMarkOffline(id);
+        setMarks(prev => prev.filter(m => m.id !== id));
+        toast.success("Mark deleted (will sync when online)");
       }
     } catch (error) {
       console.error("Error deleting mark:", error);
@@ -315,17 +499,33 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     }
   };
 
-  // Exam management
+  // Exam management (offline-aware)
   const addExam = async (examData: Omit<Exam, 'id'>): Promise<Exam> => {
     try {
-      const newExam = await DataService.addExam(examData);
-      if (newExam) {
-        setExams(prev => [...prev, newExam]);
-        toast.success("Exam added successfully");
-        return newExam;
+      if (isOnline) {
+        const newExam = await DataService.addExam(examData);
+        if (newExam) {
+          setExams(prev => [...prev, newExam]);
+          toast.success("Exam added successfully");
+          return newExam;
+        } else {
+          toast.error("Failed to add exam");
+          throw new Error("Failed to add exam");
+        }
       } else {
-        toast.error("Failed to add exam");
-        throw new Error("Failed to add exam");
+        const newExam = await OfflineStorageService.addExamOffline(examData);
+        const examForState = {
+          id: newExam.id,
+          name: newExam.name,
+          type: newExam.type,
+          term: newExam.term,
+          year: newExam.year,
+          form: newExam.form,
+          date: newExam.date
+        };
+        setExams(prev => [...prev, examForState]);
+        toast.success("Exam added (will sync when online)");
+        return examForState;
       }
     } catch (error) {
       console.error("Error adding exam:", error);
@@ -345,6 +545,9 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     currentTeacher,
     isLoading,
     isMigrated,
+    isOnline,
+    wasOffline,
+    markSyncHandled,
     login,
     logout,
     refreshData,
