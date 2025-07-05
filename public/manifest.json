@@ -1,7 +1,7 @@
 {
-  "name": "School Management System",
-  "short_name": "SchoolApp",
-  "description": "A comprehensive school management system for managing students, teachers, and academic records",
+  "name": "Padre Pio Report Card",
+  "short_name": "PadrePio",
+  "description": "Padre Pio School management system for managing students, teachers, and academic records",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,15 +10,15 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/placeholder.svg",
+      "src": "/padre-pio-logo.jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg",
+      "src": "/padre-pio-logo.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ],
