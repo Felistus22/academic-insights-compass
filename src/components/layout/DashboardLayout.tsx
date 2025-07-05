@@ -31,7 +31,7 @@ const DashboardLayout: React.FC = () => {
       {/* Mobile Navigation */}
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-white shadow-sm">
-          <h1 className="text-xl font-semibold">School Management</h1>
+          <h1 className="text-xl font-semibold">Padre Pio School</h1>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
@@ -53,7 +53,7 @@ const DashboardLayout: React.FC = () => {
           <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white shadow-sm">
             <div className="flex items-center flex-shrink-0 px-4">
               <h1 className="text-xl font-semibold text-gray-900">
-                School Management
+                Padre Pio School
               </h1>
             </div>
             <div className="mt-8 flex-grow flex flex-col">
