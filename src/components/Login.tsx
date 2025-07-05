@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap } from "lucide-react";
+import { Image } from "@/components/ui/image";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 
 const Login: React.FC = () => {
@@ -28,8 +28,12 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-education-primary/10 to-education-accent/10 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 p-3 bg-education-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
-            <GraduationCap className="h-8 w-8 text-education-primary" />
+          <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+            <Image 
+              src="/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png" 
+              alt="Padre Pio School Logo"
+              className="w-16 h-16 object-contain"
+            />
           </div>
           <div className="text-center mb-2">
             <h2 className="text-lg font-bold text-education-primary">PADRE PIO</h2>
