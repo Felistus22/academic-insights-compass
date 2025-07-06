@@ -467,6 +467,37 @@ const Reports: React.FC = () => {
     toast.success(`Opening WhatsApp to send comprehensive report to ${student.guardianName}. The PDF report card is ready for download and sharing.`);
   };
   
+  // Generate PDFs for all students in form/stream
+  const generateBatchReportCards = async () => {
+    if (filteredStudents.length === 0) {
+      toast.error("No students found for the selected form/stream");
+      return;
+    }
+
+    toast.info(`Generating ${filteredStudents.length} report cards...`);
+    
+    try {
+      for (let i = 0; i < filteredStudents.length; i++) {
+        const student = filteredStudents[i];
+        
+        // Wait a bit between generations to avoid overwhelming the browser
+        if (i > 0) await new Promise(resolve => setTimeout(resolve, 500));
+        
+        await generateStudentPDF(false, student.id);
+        
+        // Show progress
+        if (i % 5 === 0 || i === filteredStudents.length - 1) {
+          toast.info(`Generated ${i + 1}/${filteredStudents.length} report cards...`);
+        }
+      }
+      
+      toast.success(`Successfully generated ${filteredStudents.length} report cards!`);
+    } catch (error) {
+      console.error("Error generating batch PDFs:", error);
+      toast.error("Failed to generate some report cards");
+    }
+  };
+
   // Share batch reports via WhatsApp
   const shareBatchViaWhatsApp = async () => {
     if (selectedStudentIds.length === 0) {
@@ -651,6 +682,95 @@ const Reports: React.FC = () => {
             </div>
           )}
           
+          {/* Bulk PDF Download Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Bulk PDF Download</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Download all report cards for a specific form or stream for easy printing
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bulk-form">Form</Label>
+                    <Select
+                      value={selectedForm}
+                      onValueChange={setSelectedForm}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Form" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Form 1</SelectItem>
+                        <SelectItem value="2">Form 2</SelectItem>
+                        <SelectItem value="3">Form 3</SelectItem>
+                        <SelectItem value="4">Form 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="bulk-stream">Stream</Label>
+                    <Select
+                      value={selectedStream}
+                      onValueChange={setSelectedStream}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Stream" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Streams</SelectItem>
+                        <SelectItem value="A">Stream A</SelectItem>
+                        <SelectItem value="B">Stream B</SelectItem>
+                        <SelectItem value="C">Stream C</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                  <div>
+                    <p className="font-medium">
+                      {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''} found
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Form {selectedForm} {selectedStream !== 'all' ? `Stream ${selectedStream}` : '(All Streams)'}
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={generateBatchReportCards}
+                    disabled={filteredStudents.length === 0}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Download {filteredStudents.length} Report Cards
+                  </Button>
+                </div>
+                
+                {filteredStudents.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>This will download individual PDF report cards for each student:</p>
+                    <ul className="mt-2 space-y-1">
+                      {filteredStudents.slice(0, 5).map(student => (
+                        <li key={student.id} className="flex justify-between">
+                          <span>{student.firstName} {student.lastName}</span>
+                          <span>report-{student.firstName}-{student.lastName}-form{student.form}.pdf</span>
+                        </li>
+                      ))}
+                      {filteredStudents.length > 5 && (
+                        <li className="text-muted-foreground italic">
+                          ... and {filteredStudents.length - 5} more students
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
           {/* Batch Operations Card */}
           <Card>
             <CardHeader>
@@ -761,10 +881,11 @@ const Reports: React.FC = () => {
           
           {/* Hidden report cards for batch operations */}
           <div className="hidden">
-            {selectedStudentIds.map((studentId) => (
-              <div key={studentId} id={`student-report-${studentId}`}>
+            {/* Render all filtered students' report cards for bulk PDF generation */}
+            {filteredStudents.map((student) => (
+              <div key={student.id} id={`student-report-${student.id}`}>
                 <StudentReportCard
-                  studentId={studentId}
+                  studentId={student.id}
                   year={parseInt(selectedYear)}
                   term={parseInt(selectedTerm) as 1 | 2}
                 />
