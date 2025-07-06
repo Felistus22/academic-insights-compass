@@ -75,15 +75,18 @@ const DashboardLayout: React.FC = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsProfileOpen(true)}
+                      title="Edit Profile"
                     >
                       <User className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="destructive"
+                      size="sm"
                       onClick={handleLogout}
+                      className="text-xs"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-3 w-3 mr-1" />
+                      Logout
                     </Button>
                   </div>
                 </div>
@@ -129,15 +132,18 @@ const DashboardLayout: React.FC = () => {
               variant="ghost"
               size="icon"
               onClick={() => setIsProfileOpen(true)}
+              title="Edit Profile"
             >
               <User className="h-4 w-4" />
             </Button>
             <Button
-              variant="ghost"
-              size="icon"
+              variant="destructive"
+              size="sm"
               onClick={handleLogout}
+              className="text-xs"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3 w-3 mr-1" />
+              Logout
             </Button>
           </div>
         </div>

@@ -46,8 +46,8 @@ const Login: React.FC = () => {
             />
           </div>
           <div className="text-center mb-2">
-            <h2 className="text-lg font-bold text-education-primary">PADRE PIO</h2>
-            <p className="text-sm text-gray-600">Girls Secondary School</p>
+            <h2 className="text-lg font-bold text-navy">PADRE PIO</h2>
+            <p className="text-sm text-navy">Girls Secondary School</p>
           </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
@@ -92,9 +92,9 @@ const Login: React.FC = () => {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
-            <div className="space-y-1 text-xs">
+          <div className="mt-6 p-4 bg-muted rounded-md">
+            <p className="text-sm text-navy mb-2">Demo Accounts:</p>
+            <div className="space-y-1 text-xs text-navy">
               <p><strong>Admin:</strong> admin@school.com / admin123</p>
               <p><strong>Teacher:</strong> teacher@school.com / teacher123</p>
             </div>
