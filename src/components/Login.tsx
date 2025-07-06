@@ -5,13 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
+import { Badge } from "@/components/ui/badge";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useSupabaseAppContext();
+  const { isOnline } = useNetworkStatus();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +31,13 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-education-primary/10 to-education-accent/10 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          {!isOnline && (
+            <div className="mb-2">
+              <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+                Offline Mode - Demo Accounts Only
+              </Badge>
+            </div>
+          )}
           <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
             <Image 
               src="/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png" 
@@ -42,6 +52,11 @@ const Login: React.FC = () => {
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
             Sign in to access the Padre Pio School Management System
+            {!isOnline && (
+              <span className="block mt-1 text-orange-600">
+                Currently offline - using demo data
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>

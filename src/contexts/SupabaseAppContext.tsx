@@ -6,6 +6,36 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { toast } from "sonner";
 
+// Demo credentials for offline login
+const DEMO_ACCOUNTS = {
+  admin: {
+    email: "admin@school.com",
+    password: "admin123",
+    teacher: {
+      id: "demo-admin-id",
+      firstName: "Admin",
+      lastName: "User",
+      email: "admin@school.com",
+      passwordHash: "admin123",
+      role: "admin" as const,
+      subjectIds: []
+    }
+  },
+  teacher: {
+    email: "teacher@school.com", 
+    password: "teacher123",
+    teacher: {
+      id: "demo-teacher-id",
+      firstName: "Demo",
+      lastName: "Teacher",
+      email: "teacher@school.com",
+      passwordHash: "teacher123",
+      role: "teacher" as const,
+      subjectIds: []
+    }
+  }
+};
+
 interface AppContextType {
   // Data
   students: Student[];
@@ -237,6 +267,21 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     refreshData();
   }, [isOnline]);
 
+  // Check for existing session on init
+  useEffect(() => {
+    const savedSession = localStorage.getItem('offline_demo_session');
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession);
+        setCurrentTeacher(session);
+        console.log("Restored offline demo session for:", session.email);
+      } catch (error) {
+        console.error("Error restoring session:", error);
+        localStorage.removeItem('offline_demo_session');
+      }
+    }
+  }, []);
+
   // Initialize data on component mount
   useEffect(() => {
     const initializeData = async () => {
@@ -263,14 +308,44 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log("Attempting login for:", email);
     console.log("Available teachers:", teachers.map(t => ({ email: t.email, role: t.role })));
+    console.log("Is online:", isOnline);
     
+    // First try regular login with loaded teachers (works when online and data is loaded)
     const teacher = teachers.find(t => t.email === email && t.passwordHash === password);
     if (teacher) {
       console.log("Login successful for:", teacher.firstName, teacher.lastName);
       setCurrentTeacher(teacher);
+      // Clear any offline demo session
+      localStorage.removeItem('offline_demo_session');
       toast.success("Login successful!");
       return true;
     }
+    
+    // If offline or no teachers loaded, check demo credentials
+    if (!isOnline || teachers.length === 0) {
+      console.log("Checking demo credentials for offline login...");
+      
+      // Check admin demo credentials
+      if (email === DEMO_ACCOUNTS.admin.email && password === DEMO_ACCOUNTS.admin.password) {
+        console.log("Demo admin login successful");
+        const demoTeacher = DEMO_ACCOUNTS.admin.teacher;
+        setCurrentTeacher(demoTeacher);
+        localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
+        toast.success("Demo admin login successful! (Offline mode)");
+        return true;
+      }
+      
+      // Check teacher demo credentials
+      if (email === DEMO_ACCOUNTS.teacher.email && password === DEMO_ACCOUNTS.teacher.password) {
+        console.log("Demo teacher login successful");
+        const demoTeacher = DEMO_ACCOUNTS.teacher.teacher;
+        setCurrentTeacher(demoTeacher);
+        localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
+        toast.success("Demo teacher login successful! (Offline mode)");
+        return true;
+      }
+    }
+    
     console.log("Login failed - credentials not found");
     toast.error("Invalid credentials");
     return false;
@@ -278,6 +353,7 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
 
   const logout = () => {
     setCurrentTeacher(null);
+    localStorage.removeItem('offline_demo_session');
     toast.info("Logged out successfully");
   };
 
