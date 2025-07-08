@@ -250,10 +250,61 @@ export class OfflineStorageService {
     marks: Mark[];
     activityLogs: ActivityLog[];
   }): Promise<void> {
-    // Only cache subjects and activity logs as read-only data
-    // Students, teachers, exams, and marks will be managed through the offline system
+    // Cache all data for offline access
     await db.subjects.clear();
     await db.subjects.bulkAdd(data.subjects);
+
+    // Clear and cache students as synced offline data
+    await db.students.clear();
+    const offlineStudents = data.students.map(student => ({
+      ...student,
+      syncStatus: 'synced' as const,
+      lastModified: new Date(),
+      operation: 'create' as const
+    }));
+    await db.students.bulkAdd(offlineStudents);
+
+    // Clear and cache teachers as synced offline data
+    await db.teachers.clear();
+    const offlineTeachers = data.teachers.map(teacher => ({
+      ...teacher,
+      syncStatus: 'synced' as const,
+      lastModified: new Date(),
+      operation: 'create' as const
+    }));
+    await db.teachers.bulkAdd(offlineTeachers);
+
+    // Clear and cache exams as synced offline data
+    await db.exams.clear();
+    const offlineExams = data.exams.map(exam => ({
+      ...exam,
+      syncStatus: 'synced' as const,
+      lastModified: new Date(),
+      operation: 'create' as const
+    }));
+    await db.exams.bulkAdd(offlineExams);
+
+    // Clear and cache marks as synced offline data
+    await db.marks.clear();
+    const offlineMarks = data.marks.map(mark => ({
+      ...mark,
+      syncStatus: 'synced' as const,
+      lastModified: new Date(),
+      operation: 'create' as const
+    }));
+    await db.marks.bulkAdd(offlineMarks);
+  }
+
+  // Clear all offline data
+  static async clearAllData(): Promise<void> {
+    await Promise.all([
+      db.students.clear(),
+      db.teachers.clear(),
+      db.subjects.clear(),
+      db.exams.clear(),
+      db.marks.clear(),
+      db.activityLogs.clear()
+    ]);
   }
 
   // Get all data for display (combines cached and offline data)

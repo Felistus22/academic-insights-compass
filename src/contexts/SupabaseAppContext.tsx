@@ -5,6 +5,7 @@ import { SyncService } from "@/services/syncService";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { toast } from "sonner";
+import * as mockData from "@/data/mockData";
 
 // Demo credentials for offline login
 const DEMO_ACCOUNTS = {
@@ -304,6 +305,37 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     initializeData();
   }, []);
 
+  // Populate demo data for offline login
+  const populateDemoData = async () => {
+    console.log("Populating demo data for offline login...");
+    try {
+      // Clear existing offline data
+      await OfflineStorageService.clearAllData();
+      
+      // Populate offline storage with demo data
+      await OfflineStorageService.cacheOnlineData({
+        students: mockData.students,
+        teachers: mockData.teachers,
+        subjects: mockData.subjects,
+        exams: mockData.exams,
+        marks: mockData.marks,
+        activityLogs: mockData.activityLogs
+      });
+
+      // Update state with demo data
+      setStudents(mockData.students);
+      setTeachers(mockData.teachers);
+      setSubjects(mockData.subjects);
+      setExams(mockData.exams);
+      setMarks(mockData.marks);
+      setActivityLogs(mockData.activityLogs);
+      
+      console.log("Demo data populated successfully");
+    } catch (error) {
+      console.error("Error populating demo data:", error);
+    }
+  };
+
   // Authentication functions
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log("Attempting login for:", email);
@@ -331,6 +363,10 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         const demoTeacher = DEMO_ACCOUNTS.admin.teacher;
         setCurrentTeacher(demoTeacher);
         localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
+        
+        // Populate demo data for offline use
+        await populateDemoData();
+        
         toast.success("Demo admin login successful! (Offline mode)");
         return true;
       }
@@ -341,6 +377,10 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         const demoTeacher = DEMO_ACCOUNTS.teacher.teacher;
         setCurrentTeacher(demoTeacher);
         localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
+        
+        // Populate demo data for offline use
+        await populateDemoData();
+        
         toast.success("Demo teacher login successful! (Offline mode)");
         return true;
       }
