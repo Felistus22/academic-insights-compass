@@ -1,88 +1,67 @@
 
-const CACHE_NAME = 'padre-pio-v3';
+const CACHE_NAME = 'padrepio-v1';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png'
+  '/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png',
+  '/favicon.ico',
+  '/assets/index.css',
+  '/assets/index.js'
 ];
 
-// Install event - cache resources
+// Install
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Service Worker: Caching files');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.log('Service Worker: Cache failed', error);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
   );
-  // Force the waiting service worker to become the active service worker
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Deleting old cache', cacheName);
-            return caches.delete(cacheName);
-          }
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) return caches.delete(cache);
         })
-      );
-    })
+      )
+    )
   );
-  // Ensure the service worker takes control immediately
-  return self.clients.claim();
+  self.clients.claim();
 });
 
-// Fetch event - serve from cache when offline
+// Fetch
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Skip requests to Supabase API (let them fail naturally when offline)
-  if (event.request.url.includes('supabase.co')) {
-    return;
-  }
-
-  // Skip chrome-extension requests
-  if (event.request.url.startsWith('chrome-extension://')) {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
+  if (
+    event.request.url.includes('supabase.co') ||
+    event.request.url.startsWith('chrome-extension://')
+  ) return;
 
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request).then((fetchResponse) => {
-          // Don't cache non-successful responses
-          if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
-            return fetchResponse;
-          }
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request).then((response) => {
+        if (
+          !response ||
+          response.status !== 200 ||
+          response.type !== 'basic'
+        ) return response;
 
-          // Save new resources to cache
-          const responseClone = fetchResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-          return fetchResponse;
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseClone);
         });
-      })
-      .catch(() => {
-        // Return a fallback page when offline
-        if (event.request.destination === 'document') {
-          return caches.match('/');
-        }
-      })
+
+        return response;
+      });
+    }).catch(() => {
+      if (event.request.destination === 'document') {
+        return caches.match('/');
+      }
+    })
   );
 });
