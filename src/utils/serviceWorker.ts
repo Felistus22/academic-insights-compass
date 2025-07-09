@@ -1,3 +1,4 @@
+
 // Service Worker registration utility
 
 const isLocalhost = Boolean(
@@ -36,21 +37,24 @@ function registerValidSW(swUrl: string) {
     .then((registration) => {
       console.log('Service Worker registered successfully:', registration);
       
-      registration.onupdatefound = () => {
+      // Check if there's an update available
+      registration.addEventListener('updatefound', () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
           return;
         }
-        installingWorker.onstatechange = () => {
+        
+        installingWorker.addEventListener('statechange', () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               console.log('New content available; please refresh.');
+              // You can show a notification to the user here
             } else {
               console.log('Content cached for offline use.');
             }
           }
-        };
-      };
+        });
+      });
     })
     .catch((error) => {
       console.error('Service Worker registration failed:', error);
