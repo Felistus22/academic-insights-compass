@@ -1,11 +1,10 @@
 
-const CACHE_NAME = 'padre-pio-v2';
+const CACHE_NAME = 'padre-pio-v3';
 const urlsToCache = [
   '/',
+  '/index.html',
   '/manifest.json',
-  '/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png',
-  '/src/main.tsx',
-  '/src/App.tsx'
+  '/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png'
 ];
 
 // Install event - cache resources
