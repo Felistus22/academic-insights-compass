@@ -1,73 +1,125 @@
-# Welcome to your Lovable project
+# Padre Pio Report Card
 
-## Project info
+A comprehensive school management system built with React, TypeScript, and Supabase. Features student management, teacher administration, academic records, and report card generation.
 
-**URL**: https://lovable.dev/projects/3c2231f4-b2f5-44c6-8a23-1bd4d3a110d3
+## 🚀 Quick Start
 
-## How can I edit this code?
+### Prerequisites
+- Node.js (v18 or higher)
+- npm package manager
 
-There are several ways of editing your application.
+### Installation & Setup
 
-**Use Lovable**
+1. **Clone the repository**
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd padre-pio-report-card
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3c2231f4-b2f5-44c6-8a23-1bd4d3a110d3) and start prompting.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-**Use your preferred IDE**
+4. **Open in browser**
+   Navigate to `http://localhost:8080`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Alternative Setup (automated)
+```bash
+chmod +x setup.sh
+./setup.sh
 ```
 
-**Edit a file directly in GitHub**
+## 📦 Available Scripts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `npm run dev` - Start development server (frontend)
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-**Use GitHub Codespaces**
+## 📱 PWA Installation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+This app is a Progressive Web App and can be installed on desktop and mobile devices:
 
-## What technologies are used for this project?
+### Desktop Installation
+1. Open the app in Chrome/Edge
+2. Look for the install icon in the address bar
+3. Click "Install Padre Pio Report Card"
 
-This project is built with:
+### Mobile Installation
+1. Open the app in your mobile browser
+2. Tap the browser menu
+3. Select "Add to Home Screen" or "Install App"
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🏗️ Architecture
 
-## How can I deploy this project?
+### Tech Stack
+- **Frontend**: React 18, TypeScript, Vite
+- **UI Framework**: Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **State Management**: React Query, Context API
+- **PWA**: Service Worker, Web App Manifest
 
-Simply open [Lovable](https://lovable.dev/projects/3c2231f4-b2f5-44c6-8a23-1bd4d3a110d3) and click on Share -> Publish.
+### Features
+- 📊 Student management and academic records
+- 👨‍🏫 Teacher administration and subject assignments
+- 📋 Exam management and grade entry
+- 📄 Automated report card generation
+- 🔐 Role-based authentication (Admin/Teacher)
+- 📱 Progressive Web App with offline support
+- 🌙 Dark/Light theme support
+- 📊 Data visualization and reporting
 
-## Can I connect a custom domain to my Lovable project?
+## 🗄️ Database Schema
 
-Yes, you can!
+- `students` - Student profiles and information
+- `teachers` - Teacher accounts and details
+- `subjects` - Subject definitions and codes
+- `exams` - Exam schedules and configurations
+- `marks` - Student grades and assessments
+- `teacher_subjects` - Subject assignments
+- `activity_logs` - System audit trail
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🔧 Development
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Project Structure
+```
+src/
+├── components/         # Reusable UI components
+├── pages/             # Route pages
+├── contexts/          # React contexts
+├── hooks/            # Custom hooks
+├── services/         # API services
+├── types/            # TypeScript definitions
+└── integrations/     # Supabase setup
+```
+
+### Environment
+The app is pre-configured with Supabase. No additional environment variables needed for development.
+
+## 🚀 Deployment
+
+### Build for Production
+```bash
+npm run build
+```
+
+### Deploy Options
+- **Vercel**: Connect repo and deploy automatically
+- **Netlify**: Drag & drop the `dist` folder
+- **GitHub Pages**: Enable in repository settings
+
+## 📄 License
+
+Proprietary software for Padre Pio School.
+
+---
+
+### Development Notes
+
+**Lovable Integration**: This project was created with [Lovable](https://lovable.dev) and supports continuous deployment. Changes can be made through the Lovable editor or by pushing to the connected repository.
