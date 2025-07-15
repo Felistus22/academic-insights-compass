@@ -533,7 +533,7 @@ const Reports: React.FC = () => {
       </div>
       
       <Tabs defaultValue="student" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="student">Student Report Card</TabsTrigger>
           <TabsTrigger value="form">Form Performance</TabsTrigger>
         </TabsList>
@@ -544,8 +544,8 @@ const Reports: React.FC = () => {
               <CardTitle>Select Student</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="space-y-2 md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="space-y-2 sm:col-span-2 lg:col-span-2">
                   <Label htmlFor="student">Student</Label>
                   <Select
                     value={selectedStudent}
@@ -692,7 +692,7 @@ const Reports: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="bulk-form">Form</Label>
                     <Select
@@ -900,7 +900,7 @@ const Reports: React.FC = () => {
               <CardTitle>Select Form and Term</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="form">Form</Label>
                   <Select

@@ -155,7 +155,7 @@ const DashboardHome: React.FC = () => {
       </div>
 
       {/* Quick Actions - Role filtered */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {availableActions.map((action) => {
           const Icon = action.icon;
           return (
@@ -175,7 +175,7 @@ const DashboardHome: React.FC = () => {
       </div>
 
       {/* Statistics Cards - Show all for now but could be filtered */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -233,8 +233,8 @@ const DashboardHome: React.FC = () => {
 
       {/* Charts */}
       {subjectPerformance.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="col-span-4">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+          <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Average Marks by Subject</CardTitle>
             </CardHeader>
@@ -258,7 +258,7 @@ const DashboardHome: React.FC = () => {
             </CardContent>
           </Card>
           
-          <Card className="col-span-3">
+          <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Students by Form</CardTitle>
             </CardHeader>
@@ -278,7 +278,7 @@ const DashboardHome: React.FC = () => {
       )}
 
       {/* Recent Activity and Top Students */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>

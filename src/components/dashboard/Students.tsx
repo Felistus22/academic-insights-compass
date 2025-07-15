@@ -160,16 +160,16 @@ const Students: React.FC = () => {
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <Input
             placeholder="Search students..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
           />
           
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex gap-1 items-center">
@@ -228,7 +228,7 @@ const Students: React.FC = () => {
         </div>
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
             <TabsTrigger value="all">All Forms</TabsTrigger>
             <TabsTrigger value="form1">Form 1</TabsTrigger>
             <TabsTrigger value="form2">Form 2</TabsTrigger>
@@ -240,7 +240,7 @@ const Students: React.FC = () => {
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredStudents.map((student) => (
                 <Card key={student.id} className="overflow-hidden">
                   <CardHeader className="pb-2">

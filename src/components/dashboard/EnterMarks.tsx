@@ -261,7 +261,7 @@ const EnterMarks: React.FC = () => {
               <CardTitle>Select Criteria</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="class">Form/Class</Label>
                   <Select
@@ -320,12 +320,12 @@ const EnterMarks: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="exam">Exam</Label>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <Select 
                       value={selectedExam} 
                       onValueChange={setSelectedExam}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className="flex-1 w-full sm:w-auto">
                         <SelectValue placeholder="Select Exam" />
                       </SelectTrigger>
                       <SelectContent>
@@ -339,6 +339,7 @@ const EnterMarks: React.FC = () => {
                     <Button 
                       variant="outline" 
                       onClick={handleAddCustomExam}
+                      className="w-full sm:w-auto"
                     >
                       Add Exam
                     </Button>
@@ -377,7 +378,7 @@ const EnterMarks: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {filteredStudents.length > 0 ? (
-                  <div className="border rounded-md">
+                  <div className="border rounded-md overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>

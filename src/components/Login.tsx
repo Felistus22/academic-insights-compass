@@ -28,8 +28,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-education-primary/10 to-education-accent/10 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-education-primary/10 to-education-accent/10 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           {!isOnline && (
             <div className="mb-2">

@@ -156,15 +156,15 @@ const ManageStudents: React.FC = () => {
         />
       ) : (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border rounded-md w-full max-w-sm"
+              className="px-4 py-2 border rounded-md w-full sm:max-w-sm"
             />
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {selectedStudents.length > 0 && (
                 <Button 
                   variant="outline"
@@ -192,7 +192,7 @@ const ManageStudents: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-muted-foreground">Show:</span>
                   <Select value={studentsPerPage.toString()} onValueChange={handleStudentsPerPageChange}>
@@ -238,7 +238,8 @@ const ManageStudents: React.FC = () => {
                 )}
               </div>
 
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -308,7 +309,8 @@ const ManageStudents: React.FC = () => {
                     </TableRow>
                   )}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
