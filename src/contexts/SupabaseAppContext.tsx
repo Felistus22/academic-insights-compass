@@ -10,27 +10,27 @@ import * as mockData from "@/data/mockData";
 // Demo credentials for offline login
 const DEMO_ACCOUNTS = {
   admin: {
-    email: "admin@school.com",
+    email: "principal@school.edu",
     password: "admin123",
     teacher: {
       id: "demo-admin-id",
-      firstName: "Admin",
+      firstName: "Principal",
       lastName: "User",
-      email: "admin@school.com",
+      email: "principal@school.edu",
       passwordHash: "admin123",
       role: "admin" as const,
       subjectIds: []
     }
   },
   teacher: {
-    email: "teacher@school.com", 
-    password: "teacher123",
+    email: "t.anderson@school.edu", 
+    password: "password123",
     teacher: {
       id: "demo-teacher-id",
-      firstName: "Demo",
-      lastName: "Teacher",
-      email: "teacher@school.com",
-      passwordHash: "teacher123",
+      firstName: "T.",
+      lastName: "Anderson",
+      email: "t.anderson@school.edu",
+      passwordHash: "password123",
       role: "teacher" as const,
       subjectIds: []
     }

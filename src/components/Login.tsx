@@ -95,8 +95,8 @@ const Login: React.FC = () => {
           <div className="mt-6 p-4 bg-muted rounded-md">
             <p className="text-sm text-navy mb-2">Demo Accounts:</p>
             <div className="space-y-1 text-xs text-navy">
-              <p><strong>Admin:</strong> admin@school.com / admin123</p>
-              <p><strong>Teacher:</strong> teacher@school.com / teacher123</p>
+              <p><strong>Principal:</strong> principal@school.edu / admin123</p>
+              <p><strong>Teacher:</strong> t.anderson@school.edu / password123</p>
             </div>
           </div>
         </CardContent>
