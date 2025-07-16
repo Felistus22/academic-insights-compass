@@ -150,7 +150,7 @@ const DashboardHome: React.FC = () => {
         </h2>
         <p className="text-muted-foreground">
           Here's what's happening at your school today.
-          {currentTeacher?.role === "teacher" && " (Teacher View)"}
+          {currentTeacher?.role === "teacher"}{/* Teacher View */}
         </p>
       </div>
 
