@@ -17,32 +17,29 @@ export type Database = {
       activity_logs: {
         Row: {
           action: string
-          created_at: string | null
-          details: string
+          details: string | null
           id: string
-          teacher_id: string
-          timestamp: string
+          teacherid: string | null
+          timestamp: string | null
         }
         Insert: {
           action: string
-          created_at?: string | null
-          details: string
-          id: string
-          teacher_id: string
-          timestamp: string
+          details?: string | null
+          id?: string
+          teacherid?: string | null
+          timestamp?: string | null
         }
         Update: {
           action?: string
-          created_at?: string | null
-          details?: string
+          details?: string | null
           id?: string
-          teacher_id?: string
-          timestamp?: string
+          teacherid?: string | null
+          timestamp?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "activity_logs_teacher_id_fkey"
-            columns: ["teacher_id"]
+            foreignKeyName: "activity_logs_teacherid_fkey"
+            columns: ["teacherid"]
             isOneToOne: false
             referencedRelation: "teachers"
             referencedColumns: ["id"]
@@ -51,8 +48,7 @@ export type Database = {
       }
       exams: {
         Row: {
-          created_at: string | null
-          date: string
+          date: string | null
           form: number
           id: string
           name: string
@@ -61,18 +57,16 @@ export type Database = {
           year: number
         }
         Insert: {
-          created_at?: string | null
-          date: string
+          date?: string | null
           form: number
-          id: string
+          id?: string
           name: string
           term: number
           type: string
           year: number
         }
         Update: {
-          created_at?: string | null
-          date?: string
+          date?: string | null
           form?: number
           id?: string
           name?: string
@@ -84,56 +78,50 @@ export type Database = {
       }
       marks: {
         Row: {
-          created_at: string | null
-          exam_id: string
-          grade: string
+          examid: string | null
+          grade: string | null
           id: string
           remarks: string | null
           score: number
-          student_id: string
-          subject_id: string
-          updated_at: string | null
+          studentid: string | null
+          subjectid: string | null
         }
         Insert: {
-          created_at?: string | null
-          exam_id: string
-          grade: string
-          id: string
+          examid?: string | null
+          grade?: string | null
+          id?: string
           remarks?: string | null
           score: number
-          student_id: string
-          subject_id: string
-          updated_at?: string | null
+          studentid?: string | null
+          subjectid?: string | null
         }
         Update: {
-          created_at?: string | null
-          exam_id?: string
-          grade?: string
+          examid?: string | null
+          grade?: string | null
           id?: string
           remarks?: string | null
           score?: number
-          student_id?: string
-          subject_id?: string
-          updated_at?: string | null
+          studentid?: string | null
+          subjectid?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "marks_exam_id_fkey"
-            columns: ["exam_id"]
+            foreignKeyName: "marks_examid_fkey"
+            columns: ["examid"]
             isOneToOne: false
             referencedRelation: "exams"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "marks_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "marks_studentid_fkey"
+            columns: ["studentid"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "marks_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "marks_subjectid_fkey"
+            columns: ["subjectid"]
             isOneToOne: false
             referencedRelation: "subjects"
             referencedColumns: ["id"]
@@ -142,43 +130,37 @@ export type Database = {
       }
       students: {
         Row: {
-          admission_number: string
-          created_at: string | null
-          first_name: string
+          admissionnumber: string
+          firstname: string
           form: number
-          guardian_name: string
-          guardian_phone: string
+          guardianname: string | null
+          guardianphone: string | null
           id: string
-          image_url: string | null
-          last_name: string
+          imageurl: string | null
+          lastname: string
           stream: string
-          updated_at: string | null
         }
         Insert: {
-          admission_number: string
-          created_at?: string | null
-          first_name: string
+          admissionnumber: string
+          firstname: string
           form: number
-          guardian_name: string
-          guardian_phone: string
-          id: string
-          image_url?: string | null
-          last_name: string
+          guardianname?: string | null
+          guardianphone?: string | null
+          id?: string
+          imageurl?: string | null
+          lastname: string
           stream: string
-          updated_at?: string | null
         }
         Update: {
-          admission_number?: string
-          created_at?: string | null
-          first_name?: string
+          admissionnumber?: string
+          firstname?: string
           form?: number
-          guardian_name?: string
-          guardian_phone?: string
+          guardianname?: string | null
+          guardianphone?: string | null
           id?: string
-          image_url?: string | null
-          last_name?: string
+          imageurl?: string | null
+          lastname?: string
           stream?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -190,7 +172,7 @@ export type Database = {
         }
         Insert: {
           code: string
-          id: string
+          id?: string
           name: string
         }
         Update: {
@@ -200,72 +182,33 @@ export type Database = {
         }
         Relationships: []
       }
-      teacher_subjects: {
-        Row: {
-          created_at: string | null
-          id: string
-          subject_id: string
-          teacher_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          subject_id: string
-          teacher_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          subject_id?: string
-          teacher_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "teacher_subjects_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "teacher_subjects_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       teachers: {
         Row: {
-          created_at: string | null
           email: string
-          first_name: string
+          firstname: string
           id: string
-          last_name: string
-          password_hash: string
+          lastname: string
+          password: string
           role: string
-          updated_at: string | null
+          subjectids: string[] | null
         }
         Insert: {
-          created_at?: string | null
           email: string
-          first_name: string
-          id: string
-          last_name: string
-          password_hash: string
+          firstname: string
+          id?: string
+          lastname: string
+          password: string
           role: string
-          updated_at?: string | null
+          subjectids?: string[] | null
         }
         Update: {
-          created_at?: string | null
           email?: string
-          first_name?: string
+          firstname?: string
           id?: string
-          last_name?: string
-          password_hash?: string
+          lastname?: string
+          password?: string
           role?: string
-          updated_at?: string | null
+          subjectids?: string[] | null
         }
         Relationships: []
       }
