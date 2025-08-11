@@ -46,6 +46,44 @@ export type Database = {
           },
         ]
       }
+      division_ranges: {
+        Row: {
+          created_at: string
+          description: string | null
+          division: string
+          grading_system_id: string
+          id: string
+          max_points: number
+          min_points: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          division: string
+          grading_system_id: string
+          id?: string
+          max_points: number
+          min_points: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          division?: string
+          grading_system_id?: string
+          id?: string
+          max_points?: number
+          min_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "division_ranges_grading_system_id_fkey"
+            columns: ["grading_system_id"]
+            isOneToOne: false
+            referencedRelation: "grading_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exams: {
         Row: {
           date: string | null
@@ -73,6 +111,71 @@ export type Database = {
           term?: number
           type?: string
           year?: number
+        }
+        Relationships: []
+      }
+      grade_ranges: {
+        Row: {
+          created_at: string
+          grade: string
+          grading_system_id: string
+          id: string
+          max_score: number
+          min_score: number
+          points: number | null
+        }
+        Insert: {
+          created_at?: string
+          grade: string
+          grading_system_id: string
+          id?: string
+          max_score: number
+          min_score: number
+          points?: number | null
+        }
+        Update: {
+          created_at?: string
+          grade?: string
+          grading_system_id?: string
+          id?: string
+          max_score?: number
+          min_score?: number
+          points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_ranges_grading_system_id_fkey"
+            columns: ["grading_system_id"]
+            isOneToOne: false
+            referencedRelation: "grading_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grading_systems: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

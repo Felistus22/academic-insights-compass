@@ -10,6 +10,7 @@ import EnterMarks from "./EnterMarks";
 import Reports from "./Reports";
 import ActivityLogs from "./ActivityLogs";
 import FeeManagement from "./FeeManagement";
+import { GradingSystem } from "./GradingSystem";
 
 const AdminDashboard: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const AdminDashboard: React.FC = () => {
       <Route path="/reports" element={<Reports />} />
       <Route path="/activity-logs" element={<ActivityLogs />} />
       <Route path="/fee-management" element={<FeeManagement />} />
+      <Route path="/grading-system" element={<GradingSystem />} />
     </Routes>
   );
 };

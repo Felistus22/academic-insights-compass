@@ -61,7 +61,6 @@ export class DataService {
     try {
       // Delete in reverse order to respect foreign key constraints
       await supabase.from('activity_logs').delete().neq('id', '');
-      await supabase.from('teacher_subjects').delete().neq('id', '');
       await supabase.from('marks').delete().neq('id', '');
       await supabase.from('exams').delete().neq('id', '');
       await supabase.from('teachers').delete().neq('id', '');
@@ -86,14 +85,14 @@ export class DataService {
   private static async insertStudents() {
     const studentsData = mockData.students.map(student => ({
       id: student.id,
-      first_name: student.firstName,
-      last_name: student.lastName,
-      admission_number: student.admissionNumber,
+      firstname: student.firstName,
+      lastname: student.lastName,
+      admissionnumber: student.admissionNumber,
       form: student.form,
       stream: student.stream,
-      guardian_name: student.guardianName,
-      guardian_phone: student.guardianPhone,
-      image_url: student.imageUrl
+      guardianname: student.guardianName,
+      guardianphone: student.guardianPhone,
+      imageurl: student.imageUrl
     }));
 
     const { error } = await supabase
@@ -107,11 +106,12 @@ export class DataService {
   private static async insertTeachers() {
     const teachersData = mockData.teachers.map(teacher => ({
       id: teacher.id,
-      first_name: teacher.firstName,
-      last_name: teacher.lastName,
+      firstname: teacher.firstName,
+      lastname: teacher.lastName,
       email: teacher.email,
-      password_hash: teacher.passwordHash,
-      role: teacher.role
+      password: teacher.passwordHash,
+      role: teacher.role,
+      subjectids: teacher.subjectIds
     }));
 
     const { error } = await supabase
@@ -134,9 +134,9 @@ export class DataService {
   private static async insertMarks() {
     const marksData = mockData.marks.map(mark => ({
       id: mark.id,
-      student_id: mark.studentId,
-      subject_id: mark.subjectId,
-      exam_id: mark.examId,
+      studentid: mark.studentId,
+      subjectid: mark.subjectId,
+      examid: mark.examId,
       score: mark.score,
       grade: mark.grade,
       remarks: mark.remarks
@@ -157,23 +157,15 @@ export class DataService {
   }
 
   private static async insertTeacherSubjects() {
-    const teacherSubjectsData = mockData.teacherSubjects.map(ts => ({
-      teacher_id: ts.teacherId,
-      subject_id: ts.subjectId
-    }));
-
-    const { error } = await supabase
-      .from('teacher_subjects')
-      .insert(teacherSubjectsData);
-    
-    if (error) throw new Error(`Failed to insert teacher subjects: ${error.message}`);
-    console.log("Teacher subjects migrated successfully");
+    // Skip teacher subjects as this table doesn't exist in our schema
+    // Subject assignments are stored in the teachers table's subjectids array
+    console.log("Teacher subjects handled in teachers table");
   }
 
   private static async insertActivityLogs() {
     const activityLogsData = mockData.activityLogs.map(log => ({
       id: log.id,
-      teacher_id: log.teacherId,
+      teacherid: log.teacherId,
       action: log.action,
       details: log.details,
       timestamp: log.timestamp
@@ -193,7 +185,7 @@ export class DataService {
       .from('students')
       .select('*')
       .order('form', { ascending: true })
-      .order('admission_number', { ascending: true });
+      .order('admissionnumber', { ascending: true });
 
     if (error) {
       console.error("Error fetching students:", error);
@@ -202,27 +194,22 @@ export class DataService {
 
     return data.map(student => ({
       id: student.id,
-      firstName: student.first_name,
-      lastName: student.last_name,
-      admissionNumber: student.admission_number,
+      firstName: student.firstname,
+      lastName: student.lastname,
+      admissionNumber: student.admissionnumber,
       form: student.form,
       stream: student.stream as "A" | "B" | "C",
-      guardianName: student.guardian_name,
-      guardianPhone: student.guardian_phone,
-      imageUrl: student.image_url
+      guardianName: student.guardianname,
+      guardianPhone: student.guardianphone,
+      imageUrl: student.imageurl
     }));
   }
 
   static async fetchTeachers(): Promise<Teacher[]> {
     const { data, error } = await supabase
       .from('teachers')
-      .select(`
-        *,
-        teacher_subjects (
-          subject_id
-        )
-      `)
-      .order('first_name', { ascending: true });
+      .select('*')
+      .order('firstname', { ascending: true });
 
     if (error) {
       console.error("Error fetching teachers:", error);
@@ -231,12 +218,12 @@ export class DataService {
 
     return data.map(teacher => ({
       id: teacher.id,
-      firstName: teacher.first_name,
-      lastName: teacher.last_name,
+      firstName: teacher.firstname,
+      lastName: teacher.lastname,
       email: teacher.email,
-      passwordHash: teacher.password_hash,
+      passwordHash: teacher.password,
       role: teacher.role as 'teacher' | 'admin',
-      subjectIds: teacher.teacher_subjects?.map((ts: any) => ts.subject_id) || []
+      subjectIds: teacher.subjectids || []
     }));
   }
 
@@ -290,9 +277,9 @@ export class DataService {
 
     return data.map(mark => ({
       id: mark.id,
-      studentId: mark.student_id,
-      subjectId: mark.subject_id,
-      examId: mark.exam_id,
+      studentId: mark.studentid,
+      subjectId: mark.subjectid,
+      examId: mark.examid,
       score: mark.score,
       grade: mark.grade,
       remarks: mark.remarks
@@ -312,7 +299,7 @@ export class DataService {
 
     return data.map(log => ({
       id: log.id,
-      teacherId: log.teacher_id,
+      teacherId: log.teacherid,
       action: log.action,
       details: log.details,
       timestamp: log.timestamp
@@ -323,14 +310,14 @@ export class DataService {
   static async addStudent(student: Omit<Student, 'id'>): Promise<Student | null> {
     const studentData = {
       id: crypto.randomUUID(),
-      first_name: student.firstName,
-      last_name: student.lastName,
-      admission_number: student.admissionNumber,
+      firstname: student.firstName,
+      lastname: student.lastName,
+      admissionnumber: student.admissionNumber,
       form: student.form,
       stream: student.stream,
-      guardian_name: student.guardianName,
-      guardian_phone: student.guardianPhone,
-      image_url: student.imageUrl
+      guardianname: student.guardianName,
+      guardianphone: student.guardianPhone,
+      imageurl: student.imageUrl
     };
 
     const { data, error } = await supabase
@@ -346,28 +333,28 @@ export class DataService {
 
     return {
       id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      admissionNumber: data.admission_number,
+      firstName: data.firstname,
+      lastName: data.lastname,
+      admissionNumber: data.admissionnumber,
       form: data.form,
       stream: data.stream as "A" | "B" | "C",
-      guardianName: data.guardian_name,
-      guardianPhone: data.guardian_phone,
-      imageUrl: data.image_url
+      guardianName: data.guardianname,
+      guardianPhone: data.guardianphone,
+      imageUrl: data.imageurl
     };
   }
 
   static async updateStudent(id: string, student: Partial<Student>): Promise<boolean> {
     const updateData: any = {};
     
-    if (student.firstName !== undefined) updateData.first_name = student.firstName;
-    if (student.lastName !== undefined) updateData.last_name = student.lastName;
-    if (student.admissionNumber !== undefined) updateData.admission_number = student.admissionNumber;
+    if (student.firstName !== undefined) updateData.firstname = student.firstName;
+    if (student.lastName !== undefined) updateData.lastname = student.lastName;
+    if (student.admissionNumber !== undefined) updateData.admissionnumber = student.admissionNumber;
     if (student.form !== undefined) updateData.form = student.form;
     if (student.stream !== undefined) updateData.stream = student.stream;
-    if (student.guardianName !== undefined) updateData.guardian_name = student.guardianName;
-    if (student.guardianPhone !== undefined) updateData.guardian_phone = student.guardianPhone;
-    if (student.imageUrl !== undefined) updateData.image_url = student.imageUrl;
+    if (student.guardianName !== undefined) updateData.guardianname = student.guardianName;
+    if (student.guardianPhone !== undefined) updateData.guardianphone = student.guardianPhone;
+    if (student.imageUrl !== undefined) updateData.imageurl = student.imageUrl;
 
     const { error } = await supabase
       .from('students')
@@ -399,11 +386,12 @@ export class DataService {
   static async addTeacher(teacher: Omit<Teacher, 'id'>): Promise<Teacher | null> {
     const teacherData = {
       id: crypto.randomUUID(),
-      first_name: teacher.firstName,
-      last_name: teacher.lastName,
+      firstname: teacher.firstName,
+      lastname: teacher.lastName,
       email: teacher.email,
-      password_hash: teacher.passwordHash,
-      role: teacher.role
+      password: teacher.passwordHash,
+      role: teacher.role,
+      subjectids: teacher.subjectIds
     };
 
     const { data, error } = await supabase
@@ -417,28 +405,12 @@ export class DataService {
       return null;
     }
 
-    // Handle teacher subjects
-    if (teacher.subjectIds && teacher.subjectIds.length > 0) {
-      const teacherSubjectsData = teacher.subjectIds.map(subjectId => ({
-        teacher_id: data.id,
-        subject_id: subjectId
-      }));
-
-      const { error: subjectError } = await supabase
-        .from('teacher_subjects')
-        .insert(teacherSubjectsData);
-
-      if (subjectError) {
-        console.error("Error adding teacher subjects:", subjectError);
-      }
-    }
-
     return {
       id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
+      firstName: data.firstname,
+      lastName: data.lastname,
       email: data.email,
-      passwordHash: data.password_hash,
+      passwordHash: data.password,
       role: data.role as 'teacher' | 'admin',
       subjectIds: teacher.subjectIds || []
     };
@@ -447,11 +419,12 @@ export class DataService {
   static async updateTeacher(id: string, teacher: Partial<Teacher>): Promise<boolean> {
     const updateData: any = {};
     
-    if (teacher.firstName !== undefined) updateData.first_name = teacher.firstName;
-    if (teacher.lastName !== undefined) updateData.last_name = teacher.lastName;
+    if (teacher.firstName !== undefined) updateData.firstname = teacher.firstName;
+    if (teacher.lastName !== undefined) updateData.lastname = teacher.lastName;
     if (teacher.email !== undefined) updateData.email = teacher.email;
-    if (teacher.passwordHash !== undefined) updateData.password_hash = teacher.passwordHash;
+    if (teacher.passwordHash !== undefined) updateData.password = teacher.passwordHash;
     if (teacher.role !== undefined) updateData.role = teacher.role;
+    if (teacher.subjectIds !== undefined) updateData.subjectids = teacher.subjectIds;
 
     const { error } = await supabase
       .from('teachers')
@@ -461,31 +434,6 @@ export class DataService {
     if (error) {
       console.error("Error updating teacher:", error);
       return false;
-    }
-
-    // Handle teacher subjects update
-    if (teacher.subjectIds !== undefined) {
-      // Delete existing teacher subjects
-      await supabase
-        .from('teacher_subjects')
-        .delete()
-        .eq('teacher_id', id);
-
-      // Insert new teacher subjects
-      if (teacher.subjectIds.length > 0) {
-        const teacherSubjectsData = teacher.subjectIds.map(subjectId => ({
-          teacher_id: id,
-          subject_id: subjectId
-        }));
-
-        const { error: subjectError } = await supabase
-          .from('teacher_subjects')
-          .insert(teacherSubjectsData);
-
-        if (subjectError) {
-          console.error("Error updating teacher subjects:", subjectError);
-        }
-      }
     }
 
     return true;
@@ -509,9 +457,9 @@ export class DataService {
   static async addMark(mark: Omit<Mark, 'id'>): Promise<Mark | null> {
     const markData = {
       id: crypto.randomUUID(),
-      student_id: mark.studentId,
-      subject_id: mark.subjectId,
-      exam_id: mark.examId,
+      studentid: mark.studentId,
+      subjectid: mark.subjectId,
+      examid: mark.examId,
       score: mark.score,
       grade: mark.grade,
       remarks: mark.remarks
@@ -530,9 +478,9 @@ export class DataService {
 
     return {
       id: data.id,
-      studentId: data.student_id,
-      subjectId: data.subject_id,
-      examId: data.exam_id,
+      studentId: data.studentid,
+      subjectId: data.subjectid,
+      examId: data.examid,
       score: data.score,
       grade: data.grade,
       remarks: data.remarks
@@ -542,9 +490,9 @@ export class DataService {
   static async updateMark(id: string, mark: Partial<Mark>): Promise<boolean> {
     const updateData: any = {};
     
-    if (mark.studentId !== undefined) updateData.student_id = mark.studentId;
-    if (mark.subjectId !== undefined) updateData.subject_id = mark.subjectId;
-    if (mark.examId !== undefined) updateData.exam_id = mark.examId;
+    if (mark.studentId !== undefined) updateData.studentid = mark.studentId;
+    if (mark.subjectId !== undefined) updateData.subjectid = mark.subjectId;
+    if (mark.examId !== undefined) updateData.examid = mark.examId;
     if (mark.score !== undefined) updateData.score = mark.score;
     if (mark.grade !== undefined) updateData.grade = mark.grade;
     if (mark.remarks !== undefined) updateData.remarks = mark.remarks;

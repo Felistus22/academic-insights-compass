@@ -69,3 +69,32 @@ export interface FormReportProps {
   year: number;
   term: 1 | 2;
 }
+
+export interface GradingSystem {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GradeRange {
+  id: string;
+  gradingSystemId: string;
+  grade: string;
+  minScore: number;
+  maxScore: number;
+  points?: number;
+  createdAt: string;
+}
+
+export interface DivisionRange {
+  id: string;
+  gradingSystemId: string;
+  division: string;
+  minPoints: number;
+  maxPoints: number;
+  description?: string;
+  createdAt: string;
+}

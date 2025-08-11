@@ -125,6 +125,18 @@ const NavigationItems: React.FC = () => {
           </Button>
         </Link>
       )}
+
+      {isAdmin && (
+        <Link to="/dashboard/grading-system">
+          <Button 
+            variant={isActive("/grading-system") ? "default" : "ghost"} 
+            className="w-full justify-start"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Grading System
+          </Button>
+        </Link>
+      )}
     </nav>
   );
 };
