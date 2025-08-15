@@ -43,12 +43,12 @@ const InstallPrompt = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Show manual prompt after 3 seconds if no native prompt
+    // Show manual prompt after 5 seconds if no native prompt and not installed
     const timer = setTimeout(() => {
       if (!deferredPrompt && !isInstalled) {
         setShowPrompt(true);
       }
-    }, 3000);
+    }, 5000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -74,8 +74,9 @@ const InstallPrompt = () => {
         setShowManualInstructions(true);
       }
     } else {
-      // Show manual installation instructions
+      // Show manual installation instructions for all browsers
       setShowManualInstructions(true);
+      toast.info('Follow the steps below to install the app');
     }
   };
 
@@ -87,9 +88,9 @@ const InstallPrompt = () => {
         icon: <Monitor className="h-5 w-5" />,
         title: 'Install on Chrome',
         steps: [
-          'Look for the install icon (⬇️) in your address bar',
-          'Or click the three dots menu → "Install Padre Pio Report Card"',
-          'Click "Install" in the popup'
+          'Click the three dots menu (⋮) in the top right',
+          'Select "More tools" → "Create shortcut"',
+          'Check "Open as window" and click "Create"'
         ]
       };
     } else if (userAgent.includes('edg')) {
