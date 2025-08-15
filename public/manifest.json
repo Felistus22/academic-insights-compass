@@ -14,25 +14,22 @@
       "src": "/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/lovable-uploads/5263c487-173b-4d9b-83a5-6824f9f805d8.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "lang": "en",
   "categories": ["education", "productivity"],
   "dir": "ltr",
   "prefer_related_applications": false,
-  "display_override": ["window-controls-overlay", "standalone"]
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "id": "/",
+  "protocol_handlers": []
 }
 
