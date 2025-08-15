@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, X, Smartphone, Monitor } from 'lucide-react';
 import { Button } from './button';
 import { Card, CardContent } from './card';
+import { toast } from 'sonner';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -12,6 +14,7 @@ const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showManualInstructions, setShowManualInstructions] = useState(false);
 
   useEffect(() => {
     // Check if app is already installed
@@ -34,6 +37,7 @@ const InstallPrompt = () => {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
+      toast.success('App installed successfully!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -55,37 +59,85 @@ const InstallPrompt = () => {
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        setShowPrompt(false);
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+          setShowPrompt(false);
+          toast.success('Installation started!');
+        } else {
+          toast.info('Installation cancelled');
+        }
+      } catch (error) {
+        console.error('Installation error:', error);
+        setShowManualInstructions(true);
       }
     } else {
-      // Manual installation instructions
-      showManualInstallInstructions();
+      // Show manual installation instructions
+      setShowManualInstructions(true);
     }
   };
 
-  const showManualInstallInstructions = () => {
+  const getManualInstructions = () => {
     const userAgent = window.navigator.userAgent.toLowerCase();
-    let instructions = '';
-
-    if (userAgent.includes('chrome') || userAgent.includes('edge')) {
-      instructions = 'Click the install icon in your address bar or go to Settings > Install Padre Pio Report Card';
+    
+    if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
+      return {
+        icon: <Monitor className="h-5 w-5" />,
+        title: 'Install on Chrome',
+        steps: [
+          'Look for the install icon (⬇️) in your address bar',
+          'Or click the three dots menu → "Install Padre Pio Report Card"',
+          'Click "Install" in the popup'
+        ]
+      };
+    } else if (userAgent.includes('edg')) {
+      return {
+        icon: <Monitor className="h-5 w-5" />,
+        title: 'Install on Edge',
+        steps: [
+          'Click the three dots menu (⋯)',
+          'Select "Apps" → "Install this site as an app"',
+          'Click "Install"'
+        ]
+      };
+    } else if (userAgent.includes('safari') && userAgent.includes('mobile')) {
+      return {
+        icon: <Smartphone className="h-5 w-5" />,
+        title: 'Install on iOS Safari',
+        steps: [
+          'Tap the Share button (□↗)',
+          'Scroll down and tap "Add to Home Screen"',
+          'Tap "Add" in the top right'
+        ]
+      };
     } else if (userAgent.includes('firefox')) {
-      instructions = 'Go to Settings > Install this site as an app';
-    } else if (userAgent.includes('safari')) {
-      instructions = 'Tap the Share button and select "Add to Home Screen"';
+      return {
+        icon: <Monitor className="h-5 w-5" />,
+        title: 'Install on Firefox',
+        steps: [
+          'Click the three lines menu (☰)',
+          'Select "Install this site as an app"',
+          'Click "Install"'
+        ]
+      };
     } else {
-      instructions = 'Look for "Install App" or "Add to Home Screen" in your browser menu';
+      return {
+        icon: <Monitor className="h-5 w-5" />,
+        title: 'Install App',
+        steps: [
+          'Look for "Install App" in your browser menu',
+          'Or check for an install icon in the address bar',
+          'Follow your browser\'s installation prompts'
+        ]
+      };
     }
-
-    alert(`To install Padre Pio Report Card:\n\n${instructions}`);
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
+    setShowManualInstructions(false);
     // Don't show again for this session
     sessionStorage.setItem('installPromptDismissed', 'true');
   };
@@ -97,35 +149,73 @@ const InstallPrompt = () => {
 
   if (!showPrompt) return null;
 
+  const instructions = getManualInstructions();
+
   return (
     <Card className="fixed bottom-4 right-4 z-50 w-80 animate-in slide-in-from-bottom-2">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Download className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Install App</h3>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDismiss}
-            className="h-6 w-6"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground mb-3">
-          Install Padre Pio Report Card for faster access and offline use
-        </p>
-        <div className="flex gap-2">
-          <Button onClick={handleInstallClick} size="sm" className="flex-1">
-            <Download className="h-4 w-4 mr-2" />
-            Install
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleDismiss}>
-            Later
-          </Button>
-        </div>
+        {!showManualInstructions ? (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Download className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Install App</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDismiss}
+                className="h-6 w-6"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Install Padre Pio Report Card for faster access and offline use
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={handleInstallClick} size="sm" className="flex-1">
+                <Download className="h-4 w-4 mr-2" />
+                Install
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDismiss}>
+                Later
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {instructions.icon}
+                <h3 className="font-semibold">{instructions.title}</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDismiss}
+                className="h-6 w-6"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 mb-3">
+              {instructions.steps.map((step, index) => (
+                <div key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                    {index + 1}
+                  </span>
+                  <span>{step}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleDismiss} className="flex-1">
+                Got it
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
