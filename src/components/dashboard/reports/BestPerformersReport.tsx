@@ -250,30 +250,28 @@ const BestPerformersReport: React.FC = () => {
 
             <div className="space-y-2">
               <Label htmlFor="startYear">Start Year</Label>
-              <Select value={startYear} onValueChange={setStartYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Start year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="startYear"
+                type="number"
+                value={startYear}
+                onChange={(e) => setStartYear(e.target.value)}
+                placeholder="Start year"
+                min="2020"
+                max="2030"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="endYear">End Year</Label>
-              <Select value={endYear} onValueChange={setEndYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="End year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="endYear"
+                type="number"
+                value={endYear}
+                onChange={(e) => setEndYear(e.target.value)}
+                placeholder="End year"
+                min="2020"
+                max="2030"
+              />
             </div>
           </div>
         </CardContent>
