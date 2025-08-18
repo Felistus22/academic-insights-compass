@@ -13,6 +13,7 @@ import jsPDF from "jspdf";
 import { toast } from "sonner";
 import StudentReportCard from "./reports/StudentReportCard";
 import FormReport from "./reports/FormReport";
+import BestPerformersReport from "./reports/BestPerformersReport";
 import { Separator } from "@/components/ui/separator";
 import { FileText, MessageSquare, Send, Phone } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -533,9 +534,10 @@ const Reports: React.FC = () => {
       </div>
       
       <Tabs defaultValue="student" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="student">Student Report Card</TabsTrigger>
           <TabsTrigger value="form">Form Performance</TabsTrigger>
+          <TabsTrigger value="best-performers">Best Performers</TabsTrigger>
         </TabsList>
         
         <TabsContent value="student" className="space-y-4">
@@ -998,6 +1000,10 @@ const Reports: React.FC = () => {
               stream={selectedStream}
             />
           </div>
+        </TabsContent>
+        
+        <TabsContent value="best-performers" className="space-y-4">
+          <BestPerformersReport />
         </TabsContent>
       </Tabs>
     </div>
