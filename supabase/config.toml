@@ -1,1 +1,4 @@
 project_id = "nsfaxsswgshpseyeoqzm"
+
+[functions.keep-alive]
+verify_jwt = false

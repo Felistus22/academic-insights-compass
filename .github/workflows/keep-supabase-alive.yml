@@ -1,0 +1,21 @@
+name: Keep Supabase Active
+
+on:
+  schedule:
+    # Run every 5 days at 10:00 AM UTC
+    - cron: '0 10 */5 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Keep-Alive Function
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"source": "github-actions", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' \
+            https://nsfaxsswgshpseyeoqzm.supabase.co/functions/v1/keep-alive
+      
+      - name: Log Result
+        run: echo "Keep-alive ping sent successfully at $(date)"
