@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, UserPlus, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, UserPlus, MessageSquare, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { toast } from "sonner";
 import StudentForm from "./forms/StudentForm";
+import ExcelImport from "./forms/ExcelImport";
 import { Student } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +21,7 @@ const ManageStudents: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage, setStudentsPerPage] = useState(10);
+  const [showExcelImport, setShowExcelImport] = useState(false);
   
   // Sender phone number for SMS and WhatsApp
   const senderPhoneNumber = "+255697127596";
@@ -142,7 +144,12 @@ const ManageStudents: React.FC = () => {
         </p>
       </div>
 
-      {showAddForm ? (
+      {showExcelImport ? (
+        <ExcelImport
+          onClose={() => setShowExcelImport(false)}
+          onSuccess={() => setShowExcelImport(false)}
+        />
+      ) : showAddForm ? (
         <StudentForm 
           student={editingStudent} 
           onCancel={() => {
@@ -176,6 +183,14 @@ const ManageStudents: React.FC = () => {
                   Send Notification ({selectedStudents.length})
                 </Button>
               )}
+              <Button 
+                onClick={() => setShowExcelImport(true)} 
+                variant="outline"
+                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Import Excel
+              </Button>
               <Button onClick={() => setShowAddForm(true)} className="bg-education-primary hover:bg-education-dark">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Student
