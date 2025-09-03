@@ -413,7 +413,8 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         demoEmails: [DEMO_ACCOUNTS.admin.email, DEMO_ACCOUNTS.teacher.email]
       });
       
-      if (isOnline && !isDemoAccount) {
+      // For now, always save to database when online (regardless of demo status)
+      if (isOnline) {
         const newStudent = await DataService.addStudent(studentData);
         if (newStudent) {
           setStudents(prev => [...prev, newStudent]);
