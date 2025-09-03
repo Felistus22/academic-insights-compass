@@ -400,10 +400,13 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
   // Student management (offline-aware)
   const addStudent = async (studentData: Omit<Student, 'id'>) => {
     try {
-      // Check if we're in demo mode (offline session saved)
-      const isDemo = localStorage.getItem('offline_demo_session') !== null;
+      // Check if we're in demo mode by checking if current teacher is a demo account
+      const isDemoAccount = currentTeacher && (
+        currentTeacher.email === DEMO_ACCOUNTS.admin.email || 
+        currentTeacher.email === DEMO_ACCOUNTS.teacher.email
+      );
       
-      if (isOnline && !isDemo) {
+      if (isOnline && !isDemoAccount) {
         const newStudent = await DataService.addStudent(studentData);
         if (newStudent) {
           setStudents(prev => [...prev, newStudent]);
@@ -424,7 +427,7 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
           guardianPhone: newStudent.guardianPhone,
           imageUrl: newStudent.imageUrl
         }]);
-        toast.success(isDemo ? "Student added to demo data" : "Student added (will sync when online)");
+        toast.success(isDemoAccount ? "Student added to demo data" : "Student added (will sync when online)");
       }
     } catch (error) {
       console.error("Error adding student:", error);
