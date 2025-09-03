@@ -406,6 +406,13 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         currentTeacher.email === DEMO_ACCOUNTS.teacher.email
       );
       
+      console.log("Add student debug:", {
+        isOnline,
+        isDemoAccount,
+        currentTeacher: currentTeacher ? { email: currentTeacher.email, role: currentTeacher.role } : null,
+        demoEmails: [DEMO_ACCOUNTS.admin.email, DEMO_ACCOUNTS.teacher.email]
+      });
+      
       if (isOnline && !isDemoAccount) {
         const newStudent = await DataService.addStudent(studentData);
         if (newStudent) {
