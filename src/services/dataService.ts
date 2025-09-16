@@ -312,6 +312,12 @@ export class DataService {
 
   // CRUD operations
   static async addStudent(student: Omit<Student, 'id'>): Promise<Student | null> {
+    console.log("🔄 Attempting to add student:", student);
+    
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log("🔐 Current user:", user ? `${user.email} (${user.id})` : 'Not authenticated');
+    
     const studentData = {
       id: crypto.randomUUID(),
       firstname: student.firstName,
@@ -324,6 +330,8 @@ export class DataService {
       imageurl: student.imageUrl
     };
 
+    console.log("📝 Student data to insert:", studentData);
+
     const { data, error } = await supabase
       .from('students')
       .insert(studentData)
@@ -331,9 +339,17 @@ export class DataService {
       .single();
 
     if (error) {
-      console.error("Error adding student:", error);
+      console.error("❌ Error adding student:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
+
+    console.log("✅ Student added successfully:", data);
 
     return {
       id: data.id,
@@ -388,6 +404,12 @@ export class DataService {
   }
 
   static async addTeacher(teacher: Omit<Teacher, 'id'>): Promise<Teacher | null> {
+    console.log("🔄 Attempting to add teacher:", teacher);
+    
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log("🔐 Current user:", user ? `${user.email} (${user.id})` : 'Not authenticated');
+    
     const teacherData = {
       id: crypto.randomUUID(),
       firstname: teacher.firstName,
@@ -398,6 +420,8 @@ export class DataService {
       subjectids: teacher.subjectIds
     };
 
+    console.log("📝 Teacher data to insert:", teacherData);
+
     const { data, error } = await supabase
       .from('teachers')
       .insert(teacherData)
@@ -405,9 +429,17 @@ export class DataService {
       .single();
 
     if (error) {
-      console.error("Error adding teacher:", error);
+      console.error("❌ Error adding teacher:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
+
+    console.log("✅ Teacher added successfully:", data);
 
     return {
       id: data.id,

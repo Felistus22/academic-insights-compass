@@ -6,6 +6,7 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { toast } from "sonner";
 import * as mockData from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 // Demo credentials for offline login
 const DEMO_ACCOUNTS = {
@@ -366,7 +367,17 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         await populateDemoData();
         toast.success("Demo admin login successful! (Offline mode)");
       } else {
-        // Online demo login - don't populate demo data, use existing database data
+        // Online demo login - create a proper auth session
+        try {
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            console.error("Error creating anonymous session:", error);
+          } else {
+            console.log("Created anonymous session for demo user:", data.user?.id);
+          }
+        } catch (error) {
+          console.error("Auth error:", error);
+        }
         localStorage.removeItem('offline_demo_session');
         toast.success("Demo admin login successful! (Online mode - using real database)");
       }
@@ -385,7 +396,17 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
         await populateDemoData();
         toast.success("Demo teacher login successful! (Offline mode)");
       } else {
-        // Online demo login - don't populate demo data, use existing database data
+        // Online demo login - create a proper auth session
+        try {
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            console.error("Error creating anonymous session:", error);
+          } else {
+            console.log("Created anonymous session for demo user:", data.user?.id);
+          }
+        } catch (error) {
+          console.error("Auth error:", error);
+        }
         localStorage.removeItem('offline_demo_session');
         toast.success("Demo teacher login successful! (Online mode - using real database)");
       }
@@ -397,7 +418,17 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Sign out from Supabase auth if authenticated
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+      }
+    } catch (error) {
+      console.error("Auth signout error:", error);
+    }
+    
     setCurrentTeacher(null);
     localStorage.removeItem('offline_demo_session');
     toast.info("Logged out successfully");
