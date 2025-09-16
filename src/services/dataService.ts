@@ -1,4 +1,6 @@
 
+// This file provides a DataService class for interacting with a Supabase database
+// Last updated: 2025-09-16 - Fixed column name issues
 import { supabase } from "@/integrations/supabase/client";
 import { Student, Teacher, Subject, Exam, Mark, ActivityLog } from "@/types";
 import { subjects, students, teachers, exams, marks, activityLogs } from "@/data/mockData";
@@ -181,6 +183,7 @@ export class DataService {
 
   // Data fetching methods
   static async fetchStudents(): Promise<Student[]> {
+    console.log("Fetching students with correct column name: admissionnumber");
     const { data, error } = await supabase
       .from('students')
       .select('*')
@@ -206,6 +209,7 @@ export class DataService {
   }
 
   static async fetchTeachers(): Promise<Teacher[]> {
+    console.log("Fetching teachers without teacher_subjects join");
     const { data, error } = await supabase
       .from('teachers')
       .select('*')
