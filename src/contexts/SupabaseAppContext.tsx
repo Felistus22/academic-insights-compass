@@ -353,37 +353,43 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
       return true;
     }
     
-    // If offline or no teachers loaded, check demo credentials
-    if (!isOnline || teachers.length === 0) {
-      console.log("Checking demo credentials for offline login...");
+    // Check demo credentials (both online and offline)
+    // Check admin demo credentials
+    if (email === DEMO_ACCOUNTS.admin.email && password === DEMO_ACCOUNTS.admin.password) {
+      console.log("Demo admin login successful");
+      const demoTeacher = DEMO_ACCOUNTS.admin.teacher;
+      setCurrentTeacher(demoTeacher);
       
-      // Check admin demo credentials
-      if (email === DEMO_ACCOUNTS.admin.email && password === DEMO_ACCOUNTS.admin.password) {
-        console.log("Demo admin login successful");
-        const demoTeacher = DEMO_ACCOUNTS.admin.teacher;
-        setCurrentTeacher(demoTeacher);
+      if (!isOnline) {
         localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
-        
-        // Populate demo data for offline use
+        // Only populate demo data when truly offline
         await populateDemoData();
-        
         toast.success("Demo admin login successful! (Offline mode)");
-        return true;
+      } else {
+        // Online demo login - don't populate demo data, use existing database data
+        localStorage.removeItem('offline_demo_session');
+        toast.success("Demo admin login successful! (Online mode - using real database)");
       }
+      return true;
+    }
+    
+    // Check teacher demo credentials
+    if (email === DEMO_ACCOUNTS.teacher.email && password === DEMO_ACCOUNTS.teacher.password) {
+      console.log("Demo teacher login successful");
+      const demoTeacher = DEMO_ACCOUNTS.teacher.teacher;
+      setCurrentTeacher(demoTeacher);
       
-      // Check teacher demo credentials
-      if (email === DEMO_ACCOUNTS.teacher.email && password === DEMO_ACCOUNTS.teacher.password) {
-        console.log("Demo teacher login successful");
-        const demoTeacher = DEMO_ACCOUNTS.teacher.teacher;
-        setCurrentTeacher(demoTeacher);
+      if (!isOnline) {
         localStorage.setItem('offline_demo_session', JSON.stringify(demoTeacher));
-        
-        // Populate demo data for offline use
+        // Only populate demo data when truly offline
         await populateDemoData();
-        
         toast.success("Demo teacher login successful! (Offline mode)");
-        return true;
+      } else {
+        // Online demo login - don't populate demo data, use existing database data
+        localStorage.removeItem('offline_demo_session');
+        toast.success("Demo teacher login successful! (Online mode - using real database)");
       }
+      return true;
     }
     
     console.log("Login failed - credentials not found");
