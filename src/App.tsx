@@ -8,6 +8,7 @@ import { SupabaseAppProvider } from "./contexts/SupabaseAppContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import PasswordSetup from "./components/auth/PasswordSetup";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/password-setup" element={<PasswordSetup />} />
                 <Route path="/dashboard/*" element={<DashboardLayout />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
