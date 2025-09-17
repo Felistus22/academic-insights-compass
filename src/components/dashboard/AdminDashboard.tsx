@@ -11,6 +11,7 @@ import Reports from "./Reports";
 import ActivityLogs from "./ActivityLogs";
 import FeeManagement from "./FeeManagement";
 import { GradingSystem } from "./GradingSystem";
+import UserManagement from "./UserManagement";
 
 const AdminDashboard: React.FC = () => {
   return (
@@ -20,6 +21,7 @@ const AdminDashboard: React.FC = () => {
       <Route path="/students" element={<Students />} />
       <Route path="/manage-teachers" element={<ManageTeachers />} />
       <Route path="/manage-subjects" element={<ManageSubjects />} />
+      <Route path="/user-management" element={<UserManagement />} />
       <Route path="/enter-marks" element={<EnterMarks />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/activity-logs" element={<ActivityLogs />} />

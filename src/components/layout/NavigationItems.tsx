@@ -11,7 +11,8 @@ import {
   FileText, 
   Settings, 
   Activity,
-  DollarSign
+  DollarSign,
+  Mail
 } from "lucide-react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 
@@ -66,6 +67,18 @@ const NavigationItems: React.FC = () => {
           >
             <GraduationCap className="mr-2 h-4 w-4" />
             Manage Teachers
+          </Button>
+        </Link>
+      )}
+
+      {isAdmin && (
+        <Link to="/dashboard/user-management">
+          <Button 
+            variant={isActive("/user-management") ? "default" : "ghost"} 
+            className="w-full justify-start"
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            User Management
           </Button>
         </Link>
       )}
