@@ -7,10 +7,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, UserPlus } from "lucide-react";
 
 const UserInvite: React.FC = () => {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [role, setRole] = useState("teacher");
   const [isLoading, setIsLoading] = useState(false);
   const { currentTeacher } = useSupabaseAppContext();
 
@@ -19,40 +23,56 @@ const UserInvite: React.FC = () => {
                      currentTeacher?.email?.includes('demo') ||
                      !currentTeacher?.id?.includes('-'); // Real Supabase UUIDs have dashes
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Check if user is authenticated with Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session || isDemoUser) {
-      toast.error("User invitations require a real authenticated admin account. Please sign in with a Supabase user account.");
-      setIsLoading(false);
-      return;
-    }
-    
     try {
-      const redirectUrl = `${window.location.origin}/password-setup`;
-      
-      const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: redirectUrl
+      // Create user account with Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
       });
 
-      if (error) {
-        if (error.message.includes('not allowed') || error.message.includes('admin')) {
-          toast.error("Admin privileges required to send invitations. Please contact your system administrator.");
+      if (authError) {
+        toast.error(authError.message || "Failed to create user account");
+        console.error("Auth error:", authError);
+        return;
+      }
+
+      if (data.user) {
+        // Add user to teachers table
+        const { error: dbError } = await supabase
+          .from('teachers')
+          .insert({
+            id: data.user.id,
+            firstname: firstName,
+            lastname: lastName,
+            email,
+            password: 'hashed', // This is just a placeholder since we're using Supabase auth
+            role: role as 'teacher' | 'admin',
+            subjectids: []
+          });
+
+        if (dbError) {
+          toast.error("User created but failed to add to database. Please try again.");
+          console.error("Database error:", dbError);
         } else {
-          toast.error(error.message || "Failed to send invitation");
+          toast.success(`User ${firstName} ${lastName} created successfully!`);
+          // Reset form
+          setEmail("");
+          setPassword("");
+          setFirstName("");
+          setLastName("");
+          setRole("teacher");
         }
-        console.error("Invite error:", error);
-      } else {
-        toast.success(`Invitation sent to ${email}`);
-        setEmail("");
       }
     } catch (error) {
-      toast.error("Failed to send invitation");
-      console.error("Invite error:", error);
+      toast.error("Failed to create user");
+      console.error("Create user error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -64,24 +84,54 @@ const UserInvite: React.FC = () => {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            You're currently using a demo account. To send user invitations, you need to be signed in with a real Supabase user account with admin privileges.
+            You're currently using a demo account. To create users, you need to be signed in with a real Supabase user account with admin privileges.
           </AlertDescription>
         </Alert>
       )}
 
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Invite New User</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Create New User
+          </CardTitle>
           <CardDescription>
-            Send an email invitation to a new user
+            Add a new user directly to the system
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleInvite} className="space-y-4">
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  disabled={isDemoUser}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  disabled={isDemoUser}
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="inviteEmail">Email Address</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
-                id="inviteEmail"
+                id="email"
                 type="email"
                 placeholder="user@school.edu"
                 value={email}
@@ -90,12 +140,41 @@ const UserInvite: React.FC = () => {
                 disabled={isDemoUser}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter secure password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isDemoUser}
+                minLength={6}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                disabled={isDemoUser}
+                className="w-full h-10 px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
             <Button 
               type="submit" 
               className="w-full"
               disabled={isLoading || isDemoUser}
             >
-              {isLoading ? "Sending Invitation..." : "Send Invitation"}
+              {isLoading ? "Creating User..." : "Create User"}
             </Button>
           </form>
         </CardContent>
