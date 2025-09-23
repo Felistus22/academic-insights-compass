@@ -269,16 +269,61 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     refreshData();
   }, [isOnline]);
 
-  // Check for existing session on init - both demo and Supabase
+  // Set up Supabase auth state listener
   useEffect(() => {
-    const checkSupabaseSession = async () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (session?.user) {
+          // User is authenticated with Supabase
+          const userRole = session.user.app_metadata?.role;
+          console.log('User role from app_metadata:', userRole);
+          
+          if (userRole === 'admin') {
+            // Set up admin user from Supabase
+            const adminTeacher = {
+              id: session.user.id,
+              firstName: session.user.user_metadata?.first_name || 'Admin',
+              lastName: session.user.user_metadata?.last_name || 'User',
+              email: session.user.email || '',
+              passwordHash: '',
+              role: 'admin' as const,
+              subjectIds: []
+            };
+            setCurrentTeacher(adminTeacher);
+            toast.success("Admin authenticated successfully!");
+            
+            // Refresh data after authentication
+            setTimeout(() => refreshData(), 100);
+          }
+        } else {
+          // No authenticated user - check for demo session
+          const demoSession = localStorage.getItem('offline_demo_session');
+          if (demoSession) {
+            const demoTeacher = JSON.parse(demoSession);
+            setCurrentTeacher(demoTeacher);
+            
+            if (!isOnline) {
+              setTimeout(() => populateDemoData(), 100);
+            }
+          } else {
+            setCurrentTeacher(null);
+          }
+        }
+      }
+    );
+
+    // Check for existing session on mount
+    const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Initial session check:', session?.user?.email);
       
       if (session?.user) {
-        // User is authenticated with Supabase
         const userRole = session.user.app_metadata?.role;
+        console.log('Initial user role:', userRole);
+        
         if (userRole === 'admin') {
-          // Set up admin user from Supabase
           const adminTeacher = {
             id: session.user.id,
             firstName: session.user.user_metadata?.first_name || 'Admin',
@@ -290,25 +335,25 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
           };
           setCurrentTeacher(adminTeacher);
           console.log("Restored Supabase admin session for:", session.user.email);
-          return;
         }
-      }
-      
-      // Fall back to demo session if no valid Supabase session
-      const savedSession = localStorage.getItem('offline_demo_session');
-      if (savedSession) {
-        try {
-          const session = JSON.parse(savedSession);
-          setCurrentTeacher(session);
-          console.log("Restored offline demo session for:", session.email);
-        } catch (error) {
-          console.error("Error restoring session:", error);
-          localStorage.removeItem('offline_demo_session');
+      } else {
+        // Check for demo session if no Supabase session
+        const demoSession = localStorage.getItem('offline_demo_session');
+        if (demoSession) {
+          const demoTeacher = JSON.parse(demoSession);
+          setCurrentTeacher(demoTeacher);
+          console.log("Restored offline demo session for:", demoTeacher.email);
+          if (!isOnline) {
+            setTimeout(() => populateDemoData(), 100);
+          }
         }
       }
     };
 
-    checkSupabaseSession();
+    checkInitialSession();
+
+    // Cleanup subscription on unmount
+    return () => subscription.unsubscribe();
   }, []);
 
   // Initialize data on component mount
