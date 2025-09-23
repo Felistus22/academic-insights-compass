@@ -43,19 +43,31 @@ const UserInvite: React.FC = () => {
         return;
       }
 
-      if (data.user) {
-        // Add user to teachers table
-        const { error: dbError } = await supabase
-          .from('teachers')
-          .insert({
-            id: data.user.id,
-            firstname: firstName,
-            lastname: lastName,
-            email,
-            password: 'hashed', // This is just a placeholder since we're using Supabase auth
-            role: role as 'teacher' | 'admin',
-            subjectids: []
-          });
+        if (data.user) {
+          // Update user metadata with role
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            data.user.id,
+            { 
+              app_metadata: { role: role } 
+            }
+          );
+
+          if (updateError) {
+            console.log("Could not set user role in metadata, continuing with database insert:", updateError);
+          }
+
+          // Add user to teachers table
+          const { error: dbError } = await supabase
+            .from('teachers')
+            .insert({
+              id: data.user.id,
+              firstname: firstName,
+              lastname: lastName,
+              email,
+              password: 'hashed', // This is just a placeholder since we're using Supabase auth
+              role: role as 'teacher' | 'admin',
+              subjectids: []
+            });
 
         if (dbError) {
           toast.error("User created but failed to add to database. Please try again.");

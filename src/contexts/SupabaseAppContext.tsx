@@ -269,19 +269,46 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     refreshData();
   }, [isOnline]);
 
-  // Check for existing session on init
+  // Check for existing session on init - both demo and Supabase
   useEffect(() => {
-    const savedSession = localStorage.getItem('offline_demo_session');
-    if (savedSession) {
-      try {
-        const session = JSON.parse(savedSession);
-        setCurrentTeacher(session);
-        console.log("Restored offline demo session for:", session.email);
-      } catch (error) {
-        console.error("Error restoring session:", error);
-        localStorage.removeItem('offline_demo_session');
+    const checkSupabaseSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // User is authenticated with Supabase
+        const userRole = session.user.app_metadata?.role;
+        if (userRole === 'admin') {
+          // Set up admin user from Supabase
+          const adminTeacher = {
+            id: session.user.id,
+            firstName: session.user.user_metadata?.first_name || 'Admin',
+            lastName: session.user.user_metadata?.last_name || 'User',
+            email: session.user.email || '',
+            passwordHash: '',
+            role: 'admin' as const,
+            subjectIds: []
+          };
+          setCurrentTeacher(adminTeacher);
+          console.log("Restored Supabase admin session for:", session.user.email);
+          return;
+        }
       }
-    }
+      
+      // Fall back to demo session if no valid Supabase session
+      const savedSession = localStorage.getItem('offline_demo_session');
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          setCurrentTeacher(session);
+          console.log("Restored offline demo session for:", session.email);
+        } catch (error) {
+          console.error("Error restoring session:", error);
+          localStorage.removeItem('offline_demo_session');
+        }
+      }
+    };
+
+    checkSupabaseSession();
   }, []);
 
   // Initialize data on component mount

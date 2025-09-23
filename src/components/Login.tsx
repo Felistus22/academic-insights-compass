@@ -8,11 +8,14 @@ import { Image } from "@/components/ui/image";
 import { Badge } from "@/components/ui/badge";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [useSupabaseAuth, setUseSupabaseAuth] = useState(false);
   const { login } = useSupabaseAppContext();
   const { isOnline } = useNetworkStatus();
 
@@ -21,7 +24,36 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      if (useSupabaseAuth) {
+        // Use real Supabase authentication
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+
+        if (data.user) {
+          // Check if user has admin role
+          const userRole = data.user.app_metadata?.role;
+          if (userRole === 'admin') {
+            toast.success("Welcome back, Admin!");
+            window.location.reload(); // Reload to initialize with real auth
+          } else {
+            toast.error("Only admin users can access this system");
+            await supabase.auth.signOut();
+          }
+        }
+      } else {
+        // Use demo/offline authentication
+        await login(email, password);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -83,12 +115,25 @@ const Login: React.FC = () => {
                 required
               />
             </div>
+            
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={useSupabaseAuth}
+                  onChange={(e) => setUseSupabaseAuth(e.target.checked)}
+                  className="rounded border border-input"
+                />
+                <span className="text-sm">Use Supabase Authentication (for admin access)</span>
+              </label>
+            </div>
+            
             <Button 
               type="submit" 
               className="w-full bg-education-primary hover:bg-education-dark"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Signing in..." : useSupabaseAuth ? "Sign In with Supabase" : "Sign In (Demo)"}
             </Button>
           </form>
           
@@ -98,6 +143,16 @@ const Login: React.FC = () => {
               <p><strong>Principal:</strong> principal@school.edu / admin123</p>
               <p><strong>Teacher:</strong> t.anderson@school.edu / password123</p>
             </div>
+            
+            {useSupabaseAuth && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-sm text-navy mb-2">Admin Account:</p>
+                <div className="text-xs text-navy">
+                  <p><strong>Admin:</strong> felistusmbesa22@gmail.com</p>
+                  <p className="text-muted-foreground">Use the password you set up earlier</p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
