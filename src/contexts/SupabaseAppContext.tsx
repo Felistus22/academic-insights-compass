@@ -76,6 +76,11 @@ interface AppContextType {
   updateTeacher: (id: string, teacher: Partial<Teacher>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
 
+  // Subject management
+  addSubject: (subject: Omit<Subject, 'id'>) => Promise<Subject | null>;
+  updateSubject: (id: string, subject: Partial<Subject>) => Promise<boolean>;
+  deleteSubject: (id: string) => Promise<boolean>;
+
   // Mark management
   addMark: (mark: Omit<Mark, 'id'>) => Promise<void>;
   updateMark: (mark: Mark) => Promise<void>;
@@ -773,6 +778,99 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     }
   };
 
+  // Subject management (offline-aware)
+  const addSubject = async (subjectData: Omit<Subject, 'id'>): Promise<Subject | null> => {
+    try {
+      if (isOnline) {
+        const { data, error } = await supabase
+          .from('subjects')
+          .insert([subjectData])
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("Error adding subject:", error);
+          toast.error("Failed to add subject");
+          return null;
+        }
+
+        const newSubject: Subject = {
+          id: data.id,
+          name: data.name,
+          code: data.code
+        };
+        
+        setSubjects(prev => [...prev, newSubject]);
+        toast.success("Subject added successfully");
+        return newSubject;
+      } else {
+        // Offline handling would go here
+        toast.error("Cannot add subjects while offline");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error adding subject:", error);
+      toast.error("Failed to add subject");
+      return null;
+    }
+  };
+
+  const updateSubject = async (id: string, subjectData: Partial<Subject>): Promise<boolean> => {
+    try {
+      if (isOnline) {
+        const { error } = await supabase
+          .from('subjects')
+          .update(subjectData)
+          .eq('id', id);
+        
+        if (error) {
+          console.error("Error updating subject:", error);
+          toast.error("Failed to update subject");
+          return false;
+        }
+
+        setSubjects(prev => prev.map(s => s.id === id ? { ...s, ...subjectData } : s));
+        toast.success("Subject updated successfully");
+        return true;
+      } else {
+        toast.error("Cannot update subjects while offline");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error updating subject:", error);
+      toast.error("Failed to update subject");
+      return false;
+    }
+  };
+
+  const deleteSubject = async (id: string): Promise<boolean> => {
+    try {
+      if (isOnline) {
+        const { error } = await supabase
+          .from('subjects')
+          .delete()
+          .eq('id', id);
+        
+        if (error) {
+          console.error("Error deleting subject:", error);
+          toast.error("Failed to delete subject");
+          return false;
+        }
+
+        setSubjects(prev => prev.filter(s => s.id !== id));
+        toast.success("Subject deleted successfully");
+        return true;
+      } else {
+        toast.error("Cannot delete subjects while offline");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      toast.error("Failed to delete subject");
+      return false;
+    }
+  };
+
   const value: AppContextType = {
     students,
     teachers,
@@ -797,6 +895,9 @@ export const SupabaseAppProvider: React.FC<SupabaseAppProviderProps> = ({ childr
     addTeacher,
     updateTeacher,
     deleteTeacher,
+    addSubject,
+    updateSubject,
+    deleteSubject,
     addMark,
     updateMark,
     deleteMark,

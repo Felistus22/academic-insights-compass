@@ -42,7 +42,7 @@ const subjectSchema = z.object({
 type SubjectFormValues = z.infer<typeof subjectSchema>;
 
 const ManageSubjects = () => {
-  const { subjects, currentTeacher } = useSupabaseAppContext();
+  const { subjects, currentTeacher, addSubject, updateSubject, deleteSubject } = useSupabaseAppContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [deleteConfirmSubject, setDeleteConfirmSubject] = useState<Subject | null>(null);
@@ -85,29 +85,51 @@ const ManageSubjects = () => {
     setIsDialogOpen(true);
   };
 
-  const onSubmit = (values: SubjectFormValues) => {
-    // Note: In a real Supabase implementation, these would call the actual add/update functions
-    // For now, showing the structure that would work with SupabaseAppContext
-    if (editingSubject) {
-      console.log("Would update subject:", { ...editingSubject, ...values });
-      toast.success("Subject updated successfully");
-    } else {
-      console.log("Would add subject:", values);
-      toast.success("Subject added successfully");
+  const onSubmit = async (values: SubjectFormValues) => {
+    try {
+      if (editingSubject) {
+        const success = await updateSubject(editingSubject.id, values);
+        if (success) {
+          toast.success("Subject updated successfully");
+          setIsDialogOpen(false);
+          form.reset();
+        } else {
+          toast.error("Failed to update subject");
+        }
+      } else {
+        const newSubject = await addSubject(values as Subject);
+        if (newSubject) {
+          toast.success("Subject added successfully");
+          setIsDialogOpen(false);
+          form.reset();
+        } else {
+          toast.error("Failed to add subject");
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting subject:", error);
+      toast.error("An error occurred while saving the subject");
     }
-    setIsDialogOpen(false);
-    form.reset();
   };
 
   const confirmDelete = (subject: Subject) => {
     setDeleteConfirmSubject(subject);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteConfirmSubject) {
-      console.log("Would delete subject:", deleteConfirmSubject.id);
-      toast.success("Subject deleted successfully");
-      setDeleteConfirmSubject(null);
+      try {
+        const success = await deleteSubject(deleteConfirmSubject.id);
+        if (success) {
+          toast.success("Subject deleted successfully");
+          setDeleteConfirmSubject(null);
+        } else {
+          toast.error("Failed to delete subject");
+        }
+      } catch (error) {
+        console.error("Error deleting subject:", error);
+        toast.error("An error occurred while deleting the subject");
+      }
     }
   };
 

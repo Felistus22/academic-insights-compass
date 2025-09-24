@@ -33,7 +33,7 @@ const UserInvite: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
