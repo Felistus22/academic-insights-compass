@@ -37,6 +37,8 @@ export const GradingSystem: React.FC = () => {
   const [isSystemDialogOpen, setIsSystemDialogOpen] = useState(false);
   const [isGradeDialogOpen, setIsGradeDialogOpen] = useState(false);
   const [isDivisionDialogOpen, setIsDivisionDialogOpen] = useState(false);
+  const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
+  const [editingDivisionId, setEditingDivisionId] = useState<string | null>(null);
   const [systemForm, setSystemForm] = useState({ name: "", description: "" });
   const [gradeForm, setGradeForm] = useState<GradeRangeForm>({ grade: "", minScore: 0, maxScore: 100, points: 1 });
   const [divisionForm, setDivisionForm] = useState<DivisionRangeForm>({ division: "", minPoints: 0, maxPoints: 100, description: "" });
@@ -223,92 +225,222 @@ export const GradingSystem: React.FC = () => {
     if (!selectedSystem || !gradeForm.grade.trim()) return;
 
     try {
-      const { data, error } = await supabase
-        .from('grade_ranges')
-        .insert({
-          grading_system_id: selectedSystem.id,
-          grade: gradeForm.grade,
-          min_score: gradeForm.minScore,
-          max_score: gradeForm.maxScore,
-          points: gradeForm.points
-        })
-        .select()
-        .single();
+      if (editingGradeId) {
+        // Update existing grade range
+        const { error } = await supabase
+          .from('grade_ranges')
+          .update({
+            grade: gradeForm.grade,
+            min_score: gradeForm.minScore,
+            max_score: gradeForm.maxScore,
+            points: gradeForm.points
+          })
+          .eq('id', editingGradeId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const newRange = {
-        id: data.id,
-        gradingSystemId: data.grading_system_id,
-        grade: data.grade,
-        minScore: data.min_score,
-        maxScore: data.max_score,
-        points: data.points,
-        createdAt: data.created_at
-      };
+        setGradeRanges(gradeRanges.map(range => 
+          range.id === editingGradeId 
+            ? { ...range, grade: gradeForm.grade, minScore: gradeForm.minScore, maxScore: gradeForm.maxScore, points: gradeForm.points }
+            : range
+        ).sort((a, b) => b.maxScore - a.maxScore));
 
-      setGradeRanges([...gradeRanges, newRange].sort((a, b) => b.maxScore - a.maxScore));
+        toast({
+          title: "Success",
+          description: "Grade range updated successfully",
+        });
+      } else {
+        // Insert new grade range
+        const { data, error } = await supabase
+          .from('grade_ranges')
+          .insert({
+            grading_system_id: selectedSystem.id,
+            grade: gradeForm.grade,
+            min_score: gradeForm.minScore,
+            max_score: gradeForm.maxScore,
+            points: gradeForm.points
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newRange = {
+          id: data.id,
+          gradingSystemId: data.grading_system_id,
+          grade: data.grade,
+          minScore: data.min_score,
+          maxScore: data.max_score,
+          points: data.points,
+          createdAt: data.created_at
+        };
+
+        setGradeRanges([...gradeRanges, newRange].sort((a, b) => b.maxScore - a.maxScore));
+
+        toast({
+          title: "Success",
+          description: "Grade range added successfully",
+        });
+      }
+
       setGradeForm({ grade: "", minScore: 0, maxScore: 100, points: 1 });
+      setEditingGradeId(null);
       setIsGradeDialogOpen(false);
-
-      toast({
-        title: "Success",
-        description: "Grade range added successfully",
-      });
     } catch (error) {
-      console.error('Error adding grade range:', error);
+      console.error('Error saving grade range:', error);
       toast({
         title: "Error",
-        description: "Failed to add grade range",
+        description: "Failed to save grade range",
         variant: "destructive",
       });
     }
+  };
+
+  const handleDeleteGradeRange = async (rangeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('grade_ranges')
+        .delete()
+        .eq('id', rangeId);
+
+      if (error) throw error;
+
+      setGradeRanges(gradeRanges.filter(range => range.id !== rangeId));
+
+      toast({
+        title: "Success",
+        description: "Grade range deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting grade range:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete grade range",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditGradeRange = (range: GradeRange) => {
+    setGradeForm({
+      grade: range.grade,
+      minScore: range.minScore,
+      maxScore: range.maxScore,
+      points: range.points
+    });
+    setEditingGradeId(range.id);
+    setIsGradeDialogOpen(true);
   };
 
   const handleAddDivisionRange = async () => {
     if (!selectedSystem || !divisionForm.division.trim()) return;
 
     try {
-      const { data, error } = await supabase
-        .from('division_ranges')
-        .insert({
-          grading_system_id: selectedSystem.id,
-          division: divisionForm.division,
-          min_points: divisionForm.minPoints,
-          max_points: divisionForm.maxPoints,
-          description: divisionForm.description
-        })
-        .select()
-        .single();
+      if (editingDivisionId) {
+        // Update existing division range
+        const { error } = await supabase
+          .from('division_ranges')
+          .update({
+            division: divisionForm.division,
+            min_points: divisionForm.minPoints,
+            max_points: divisionForm.maxPoints,
+            description: divisionForm.description
+          })
+          .eq('id', editingDivisionId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const newRange = {
-        id: data.id,
-        gradingSystemId: data.grading_system_id,
-        division: data.division,
-        minPoints: data.min_points,
-        maxPoints: data.max_points,
-        description: data.description,
-        createdAt: data.created_at
-      };
+        setDivisionRanges(divisionRanges.map(range => 
+          range.id === editingDivisionId 
+            ? { ...range, division: divisionForm.division, minPoints: divisionForm.minPoints, maxPoints: divisionForm.maxPoints, description: divisionForm.description }
+            : range
+        ).sort((a, b) => b.minPoints - a.minPoints));
 
-      setDivisionRanges([...divisionRanges, newRange].sort((a, b) => b.minPoints - a.minPoints));
+        toast({
+          title: "Success",
+          description: "Division range updated successfully",
+        });
+      } else {
+        // Insert new division range
+        const { data, error } = await supabase
+          .from('division_ranges')
+          .insert({
+            grading_system_id: selectedSystem.id,
+            division: divisionForm.division,
+            min_points: divisionForm.minPoints,
+            max_points: divisionForm.maxPoints,
+            description: divisionForm.description
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newRange = {
+          id: data.id,
+          gradingSystemId: data.grading_system_id,
+          division: data.division,
+          minPoints: data.min_points,
+          maxPoints: data.max_points,
+          description: data.description,
+          createdAt: data.created_at
+        };
+
+        setDivisionRanges([...divisionRanges, newRange].sort((a, b) => b.minPoints - a.minPoints));
+
+        toast({
+          title: "Success",
+          description: "Division range added successfully",
+        });
+      }
+
       setDivisionForm({ division: "", minPoints: 0, maxPoints: 100, description: "" });
+      setEditingDivisionId(null);
       setIsDivisionDialogOpen(false);
-
-      toast({
-        title: "Success",
-        description: "Division range added successfully",
-      });
     } catch (error) {
-      console.error('Error adding division range:', error);
+      console.error('Error saving division range:', error);
       toast({
         title: "Error",
-        description: "Failed to add division range",
+        description: "Failed to save division range",
         variant: "destructive",
       });
     }
+  };
+
+  const handleDeleteDivisionRange = async (rangeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('division_ranges')
+        .delete()
+        .eq('id', rangeId);
+
+      if (error) throw error;
+
+      setDivisionRanges(divisionRanges.filter(range => range.id !== rangeId));
+
+      toast({
+        title: "Success",
+        description: "Division range deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting division range:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete division range",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditDivisionRange = (range: DivisionRange) => {
+    setDivisionForm({
+      division: range.division,
+      minPoints: range.minPoints,
+      maxPoints: range.maxPoints,
+      description: range.description
+    });
+    setEditingDivisionId(range.id);
+    setIsDivisionDialogOpen(true);
   };
 
   if (loading) {
@@ -419,17 +551,23 @@ export const GradingSystem: React.FC = () => {
                         <CardTitle>Grade Ranges - {selectedSystem.name}</CardTitle>
                         <CardDescription>Configure score-to-grade mappings</CardDescription>
                       </div>
-                      <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Grade
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Grade Range</DialogTitle>
-                          </DialogHeader>
+                       <Dialog open={isGradeDialogOpen} onOpenChange={(open) => {
+                         setIsGradeDialogOpen(open);
+                         if (!open) {
+                           setEditingGradeId(null);
+                           setGradeForm({ grade: "", minScore: 0, maxScore: 100, points: 1 });
+                         }
+                       }}>
+                         <DialogTrigger asChild>
+                           <Button size="sm">
+                             <Plus className="mr-2 h-4 w-4" />
+                             Add Grade
+                           </Button>
+                         </DialogTrigger>
+                         <DialogContent>
+                           <DialogHeader>
+                             <DialogTitle>{editingGradeId ? 'Edit' : 'Add'} Grade Range</DialogTitle>
+                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
                               <Label htmlFor="grade">Grade</Label>
@@ -470,12 +608,16 @@ export const GradingSystem: React.FC = () => {
                               />
                             </div>
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsGradeDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={handleAddGradeRange}>Add Grade</Button>
-                          </DialogFooter>
+                           <DialogFooter>
+                             <Button variant="outline" onClick={() => {
+                               setIsGradeDialogOpen(false);
+                               setEditingGradeId(null);
+                               setGradeForm({ grade: "", minScore: 0, maxScore: 100, points: 1 });
+                             }}>
+                               Cancel
+                             </Button>
+                             <Button onClick={handleAddGradeRange}>{editingGradeId ? 'Update' : 'Add'} Grade</Button>
+                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -496,14 +638,14 @@ export const GradingSystem: React.FC = () => {
                             <TableCell className="font-medium">{range.grade}</TableCell>
                             <TableCell>{range.minScore} - {range.maxScore}</TableCell>
                             <TableCell>{range.points}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                             <TableCell>
+                               <Button variant="ghost" size="sm" onClick={() => handleEditGradeRange(range)}>
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm" onClick={() => handleDeleteGradeRange(range.id)}>
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -520,17 +662,23 @@ export const GradingSystem: React.FC = () => {
                         <CardTitle>Division Ranges - {selectedSystem.name}</CardTitle>
                         <CardDescription>Configure point-to-division classifications</CardDescription>
                       </div>
-                      <Dialog open={isDivisionDialogOpen} onOpenChange={setIsDivisionDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Division
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Division Range</DialogTitle>
-                          </DialogHeader>
+                       <Dialog open={isDivisionDialogOpen} onOpenChange={(open) => {
+                         setIsDivisionDialogOpen(open);
+                         if (!open) {
+                           setEditingDivisionId(null);
+                           setDivisionForm({ division: "", minPoints: 0, maxPoints: 100, description: "" });
+                         }
+                       }}>
+                         <DialogTrigger asChild>
+                           <Button size="sm">
+                             <Plus className="mr-2 h-4 w-4" />
+                             Add Division
+                           </Button>
+                         </DialogTrigger>
+                         <DialogContent>
+                           <DialogHeader>
+                             <DialogTitle>{editingDivisionId ? 'Edit' : 'Add'} Division Range</DialogTitle>
+                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
                               <Label htmlFor="division">Division</Label>
@@ -571,12 +719,16 @@ export const GradingSystem: React.FC = () => {
                               />
                             </div>
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsDivisionDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={handleAddDivisionRange}>Add Division</Button>
-                          </DialogFooter>
+                           <DialogFooter>
+                             <Button variant="outline" onClick={() => {
+                               setIsDivisionDialogOpen(false);
+                               setEditingDivisionId(null);
+                               setDivisionForm({ division: "", minPoints: 0, maxPoints: 100, description: "" });
+                             }}>
+                               Cancel
+                             </Button>
+                             <Button onClick={handleAddDivisionRange}>{editingDivisionId ? 'Update' : 'Add'} Division</Button>
+                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -597,14 +749,14 @@ export const GradingSystem: React.FC = () => {
                             <TableCell className="font-medium">{range.division}</TableCell>
                             <TableCell>{range.minPoints} - {range.maxPoints}</TableCell>
                             <TableCell>{range.description}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                             <TableCell>
+                               <Button variant="ghost" size="sm" onClick={() => handleEditDivisionRange(range)}>
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm" onClick={() => handleDeleteDivisionRange(range.id)}>
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
