@@ -392,20 +392,20 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-foreground">
-                <th className="border-r border-foreground px-2 py-1 text-left bg-muted">SUBJECT</th>
+                <th className="border-r border-foreground px-2 py-1 text-left bg-muted break-words">SUBJECT</th>
                 {relevantExams.map((exam) => (
-                  <th key={exam.id} className="border-r border-foreground px-1 py-1 text-center bg-muted min-w-[50px]">
+                  <th key={exam.id} className="border-r border-foreground px-1 py-1 text-center bg-muted min-w-[50px] break-words">
                     {exam.type === "Custom" ? exam.name.slice(0, 6) : exam.type.slice(0, 6)}
                   </th>
                 ))}
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">S.Mean</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Position</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Entry</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Average</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Grade</th>
-                <th className="border-r border-foreground px-1 py-1 text-center bg-muted">Points</th>
-                <th className="border-r border-foreground px-2 py-1 text-center bg-muted">COMMENT BY SUBJECT</th>
-                <th className="px-2 py-1 text-center bg-muted">INITIAL</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">S.Mean</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">Position</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">Entry</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">Average</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">Grade</th>
+                <th className="border-r border-foreground px-1 py-1 text-center bg-muted break-words">Points</th>
+                <th className="border-r border-foreground px-2 py-1 text-center bg-muted break-words">COMMENT BY SUBJECT</th>
+                <th className="px-2 py-1 text-center bg-muted break-words">SUBJECT TEACHER INITIAL</th>
               </tr>
             </thead>
             <tbody>
@@ -453,8 +453,8 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
                       {gradeInfo.remarks}
                     </td>
                     <td className="px-2 py-1 text-center">
-                      {/* Mock teacher initials */}
-                      {subject.name.charAt(0)}{subject.name.charAt(1) || 'T'}
+                      {/* Teacher initials - placeholder */}
+                      --
                     </td>
                   </tr>
                 );

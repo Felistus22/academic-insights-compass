@@ -39,6 +39,7 @@ export const GradingSystem: React.FC = () => {
   const [isDivisionDialogOpen, setIsDivisionDialogOpen] = useState(false);
   const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
   const [editingDivisionId, setEditingDivisionId] = useState<string | null>(null);
+  const [editingSystemId, setEditingSystemId] = useState<string | null>(null);
   const [systemForm, setSystemForm] = useState({ name: "", description: "" });
   const [gradeForm, setGradeForm] = useState<GradeRangeForm>({ grade: "", minScore: 0, maxScore: 100, points: 1 });
   const [divisionForm, setDivisionForm] = useState<DivisionRangeForm>({ division: "", minPoints: 0, maxPoints: 100, description: "" });
@@ -144,40 +145,105 @@ export const GradingSystem: React.FC = () => {
     if (!systemForm.name.trim()) return;
 
     try {
-      const { data, error } = await supabase
+      if (editingSystemId) {
+        // Update existing system
+        const { error } = await supabase
+          .from('grading_systems')
+          .update({
+            name: systemForm.name,
+            description: systemForm.description
+          })
+          .eq('id', editingSystemId);
+
+        if (error) throw error;
+
+        setGradingSystems(gradingSystems.map(system =>
+          system.id === editingSystemId
+            ? { ...system, name: systemForm.name, description: systemForm.description }
+            : system
+        ));
+
+        toast({
+          title: "Success",
+          description: "Grading system updated successfully",
+        });
+      } else {
+        // Create new system
+        const { data, error } = await supabase
+          .from('grading_systems')
+          .insert({
+            name: systemForm.name,
+            description: systemForm.description,
+            is_active: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newSystem = {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          isActive: data.is_active,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+
+        setGradingSystems([newSystem, ...gradingSystems]);
+
+        toast({
+          title: "Success",
+          description: "Grading system created successfully",
+        });
+      }
+
+      setSystemForm({ name: "", description: "" });
+      setEditingSystemId(null);
+      setIsSystemDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving grading system:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save grading system",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditSystem = (system: GradingSystemType) => {
+    setSystemForm({
+      name: system.name,
+      description: system.description || ""
+    });
+    setEditingSystemId(system.id);
+    setIsSystemDialogOpen(true);
+  };
+
+  const handleDeleteSystem = async (systemId: string) => {
+    try {
+      const { error } = await supabase
         .from('grading_systems')
-        .insert({
-          name: systemForm.name,
-          description: systemForm.description,
-          is_active: false
-        })
-        .select()
-        .single();
+        .delete()
+        .eq('id', systemId);
 
       if (error) throw error;
 
-      const newSystem = {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        isActive: data.is_active,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-
-      setGradingSystems([newSystem, ...gradingSystems]);
-      setSystemForm({ name: "", description: "" });
-      setIsSystemDialogOpen(false);
+      setGradingSystems(gradingSystems.filter(system => system.id !== systemId));
       
+      if (selectedSystem?.id === systemId) {
+        setSelectedSystem(null);
+      }
+
       toast({
         title: "Success",
-        description: "Grading system created successfully",
+        description: "Grading system deleted successfully",
       });
     } catch (error) {
-      console.error('Error creating grading system:', error);
+      console.error('Error deleting grading system:', error);
       toast({
         title: "Error",
-        description: "Failed to create grading system",
+        description: "Failed to delete grading system",
         variant: "destructive",
       });
     }
@@ -454,7 +520,13 @@ export const GradingSystem: React.FC = () => {
           <h1 className="text-3xl font-bold">Grading System Management</h1>
           <p className="text-muted-foreground">Configure grade ranges and division criteria</p>
         </div>
-        <Dialog open={isSystemDialogOpen} onOpenChange={setIsSystemDialogOpen}>
+        <Dialog open={isSystemDialogOpen} onOpenChange={(open) => {
+          setIsSystemDialogOpen(open);
+          if (!open) {
+            setEditingSystemId(null);
+            setSystemForm({ name: "", description: "" });
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -463,9 +535,9 @@ export const GradingSystem: React.FC = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Grading System</DialogTitle>
+              <DialogTitle>{editingSystemId ? 'Edit' : 'Create New'} Grading System</DialogTitle>
               <DialogDescription>
-                Create a new grading system with custom grade and division ranges.
+                {editingSystemId ? 'Update' : 'Create'} a grading system with custom grade and division ranges.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -489,10 +561,14 @@ export const GradingSystem: React.FC = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsSystemDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsSystemDialogOpen(false);
+                setEditingSystemId(null);
+                setSystemForm({ name: "", description: "" });
+              }}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateSystem}>Create System</Button>
+              <Button onClick={handleCreateSystem}>{editingSystemId ? 'Update' : 'Create'} System</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -517,7 +593,29 @@ export const GradingSystem: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium">{system.name}</h3>
-                  {system.isActive && <Badge variant="default">Active</Badge>}
+                  <div className="flex items-center gap-2">
+                    {system.isActive && <Badge variant="default">Active</Badge>}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditSystem(system);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSystem(system.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 {system.description && (
                   <p className="text-sm text-muted-foreground mb-2">{system.description}</p>
