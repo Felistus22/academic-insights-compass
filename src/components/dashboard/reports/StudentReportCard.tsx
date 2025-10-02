@@ -40,38 +40,55 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
   useEffect(() => {
     const fetchGradingSystem = async () => {
       try {
+        console.log('🎓 Fetching active grading system...');
+        
         // Get active grading system
-        const { data: activeSystem } = await supabase
+        const { data: activeSystem, error: systemError } = await supabase
           .from('grading_systems')
-          .select('id')
+          .select('id, name, is_active')
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
+
+        if (systemError) {
+          console.error('❌ Error fetching grading system:', systemError);
+          return;
+        }
 
         if (activeSystem) {
+          console.log('✅ Active grading system found:', activeSystem);
+          
           // Fetch grade ranges
-          const { data: grades } = await supabase
+          const { data: grades, error: gradesError } = await supabase
             .from('grade_ranges')
             .select('*')
             .eq('grading_system_id', activeSystem.id)
             .order('min_score', { ascending: false });
 
-          if (grades) {
+          if (gradesError) {
+            console.error('❌ Error fetching grade ranges:', gradesError);
+          } else if (grades) {
+            console.log('✅ Grade ranges loaded:', grades.length, 'ranges');
             setGradeRanges(grades);
           }
 
           // Fetch division ranges
-          const { data: divisions } = await supabase
+          const { data: divisions, error: divisionsError } = await supabase
             .from('division_ranges')
             .select('*')
             .eq('grading_system_id', activeSystem.id)
             .order('min_points', { ascending: false });
 
-          if (divisions) {
+          if (divisionsError) {
+            console.error('❌ Error fetching division ranges:', divisionsError);
+          } else if (divisions) {
+            console.log('✅ Division ranges loaded:', divisions.length, 'ranges');
             setDivisionRanges(divisions);
           }
+        } else {
+          console.warn('⚠️ No active grading system found - using default ranges');
         }
       } catch (error) {
-        console.error('Error fetching grading system:', error);
+        console.error('❌ Error fetching grading system:', error);
       }
     };
 
@@ -274,36 +291,33 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
     return entries;
   }, [subjects, students, marks, student, relevantExams]);
 
-  // Generate data for the performance chart (terminal averages)
+  // Generate data for the performance chart (individual exams)
   const chartData = useMemo(() => {
     const data: any[] = [];
     
-    // Get terminal averages for each term
-    [1, 2].forEach(termNum => {
-      const termExams = exams.filter(
-        e => e.year === year && e.term === termNum && e.form === student?.form
+    // Get individual exam averages for the current term
+    relevantExams.forEach(exam => {
+      const examMarks = marks.filter(
+        m => m.studentId === studentId && m.examId === exam.id
       );
       
-      if (termExams.length > 0) {
-        const termMarks = marks.filter(
-          m => m.studentId === studentId && 
-          termExams.some(e => e.id === m.examId)
-        );
+      if (examMarks.length > 0) {
+        const examTotal = examMarks.reduce((sum, m) => sum + m.score, 0);
+        const examAverage = Math.round(examTotal / examMarks.length);
         
-        if (termMarks.length > 0) {
-          const termTotal = termMarks.reduce((sum, m) => sum + m.score, 0);
-          const termAverage = Math.round(termTotal / termMarks.length);
-          
-          data.push({
-            name: `Term ${termNum}`,
-            average: termAverage
-          });
-        }
+        // Use exam name or type for display
+        const examName = exam.type === "Custom" ? exam.name : exam.type;
+        
+        data.push({
+          name: examName.length > 10 ? examName.slice(0, 10) + '...' : examName,
+          average: examAverage,
+          fullName: examName
+        });
       }
     });
     
     return data;
-  }, [exams, marks, studentId, year, student]);
+  }, [relevantExams, marks, studentId]);
 
   // Calculate total marks, points, GPA, and division
   const performanceMetrics = useMemo(() => {
@@ -710,21 +724,28 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <div className="border-b border-foreground w-40 mt-2"></div>
         </div>
 
-        {/* Performance Chart - Terminal Average Scores */}
+        {/* Performance Chart - Individual Exam Scores */}
         <div className="border border-foreground p-4">
-          <h3 className="text-center font-medium mb-4">Terminal Average Scores (Out of 100)</h3>
+          <h3 className="text-center font-medium mb-4">Performance Per Exam (Out of 100)</h3>
           {chartData.length > 0 ? (
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip />
+                  <Tooltip 
+                    formatter={(value: any) => [`${value}%`, 'Average']}
+                    labelFormatter={(label: any) => {
+                      const item = chartData.find(d => d.name === label);
+                      return item?.fullName || label;
+                    }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="average"
                     stroke="#1E88E5"
+                    strokeWidth={2}
                     activeDot={{ r: 8 }}
                   />
                 </LineChart>

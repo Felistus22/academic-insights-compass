@@ -417,10 +417,17 @@ const Reports: React.FC = () => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
+    // Generate PDF for sharing first
+    const pdfUrl = await generateStudentPDF(true, studentId);
+    if (!pdfUrl) {
+      toast.error("Failed to generate PDF for sharing");
+      return;
+    }
+    
     const studentName = `${student.firstName} ${student.lastName}`;
     const performanceData = getStudentPerformanceSummary(studentId);
     
-    // Create comprehensive WhatsApp message with all academic details
+    // Create comprehensive WhatsApp message with all academic details and PDF link
     const message = encodeURIComponent(
       `🎓 *ACADEMIC REPORT CARD*\n` +
       `👩‍🎓 Student: *${studentName}*\n` +
@@ -443,8 +450,8 @@ const Reports: React.FC = () => {
       `📈 *ACADEMIC INSIGHT:*\n` +
       `Your child has demonstrated ${performanceData.summary}.\n\n` +
       
-      `📄 *COMPLETE REPORT CARD:*\n` +
-      `Please download the PDF report card from the school's reports section for the full detailed breakdown, teacher comments, and performance charts.\n\n` +
+      `📄 *FULL REPORT CARD PDF:*\n` +
+      `${pdfUrl}\n\n` +
       
       `📞 For any questions about this report or to schedule a parent-teacher meeting, please contact the school.\n\n` +
       
@@ -453,11 +460,11 @@ const Reports: React.FC = () => {
       `📱 0682 159 199`
     );
     
-    // Open WhatsApp with comprehensive pre-filled message
+    // Open WhatsApp with comprehensive pre-filled message including PDF link
     const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
     window.open(whatsappURL, '_blank');
     
-    toast.success(`Opening WhatsApp to send comprehensive report to ${student.guardianName}. Please use the Download PDF button to get the full report.`);
+    toast.success(`Opening WhatsApp with report and PDF link for ${student.guardianName}`);
   };
   
   // Generate PDFs for all students in form/stream
