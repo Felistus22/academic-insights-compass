@@ -370,7 +370,8 @@ const Reports: React.FC = () => {
         `• ${subject.subject}: ${subject.average}% *(Grade ${subject.grade})*`
       ).join('\n') +
       (performanceData.subjectBreakdown.length > 5 ? '\n...and more subjects' : '') +
-      `\n\n📞 Contact school for full detailed report card.`;
+      `\n\n📞 Contact school for full detailed report card.\n` +
+      `📄 Download the full PDF report by clicking the download button in the reports section.`;
     
     toast.info(`Sending comprehensive report to ${student.guardianName} at ${student.guardianPhone}...`);
     console.log("Enhanced SMS message content:", smsMessage);
@@ -416,17 +417,10 @@ const Reports: React.FC = () => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    // Generate PDF first for download link
-    const pdfUrl = await generateStudentPDF(true, studentId);
-    if (!pdfUrl) {
-      toast.error("Failed to generate PDF for sharing");
-      return;
-    }
-    
     const studentName = `${student.firstName} ${student.lastName}`;
     const performanceData = getStudentPerformanceSummary(studentId);
     
-    // Create comprehensive WhatsApp message with all academic details and PDF download link
+    // Create comprehensive WhatsApp message with all academic details
     const message = encodeURIComponent(
       `🎓 *ACADEMIC REPORT CARD*\n` +
       `👩‍🎓 Student: *${studentName}*\n` +
@@ -450,9 +444,7 @@ const Reports: React.FC = () => {
       `Your child has demonstrated ${performanceData.summary}.\n\n` +
       
       `📄 *COMPLETE REPORT CARD:*\n` +
-      `A detailed PDF report card with full academic breakdown, teacher comments, and performance charts has been prepared for download.\n\n` +
-      
-      `📎 *DOWNLOAD LINK:* ${pdfUrl}\n\n` +
+      `Please download the PDF report card from the school's reports section for the full detailed breakdown, teacher comments, and performance charts.\n\n` +
       
       `📞 For any questions about this report or to schedule a parent-teacher meeting, please contact the school.\n\n` +
       
@@ -465,7 +457,7 @@ const Reports: React.FC = () => {
     const whatsappURL = `https://api.whatsapp.com/send?phone=${student.guardianPhone.replace(/\D/g, '')}&text=${message}`;
     window.open(whatsappURL, '_blank');
     
-    toast.success(`Opening WhatsApp to send comprehensive report to ${student.guardianName}. The PDF report card is ready for download and sharing.`);
+    toast.success(`Opening WhatsApp to send comprehensive report to ${student.guardianName}. Please use the Download PDF button to get the full report.`);
   };
   
   // Generate PDFs for all students in form/stream

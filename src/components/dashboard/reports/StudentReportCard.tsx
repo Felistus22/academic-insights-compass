@@ -1,10 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Image } from "@/components/ui/image";
 import { User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StudentReportCardProps {
   studentId: string;
@@ -12,44 +13,19 @@ interface StudentReportCardProps {
   term: 1 | 2;
 }
 
-// Updated helper function to calculate grade, points and remarks based on score
-const calculateGradeInfo = (score: number): { grade: string; points: number; remarks: string } => {
-  if (score >= 80) {
-    return { grade: 'A', points: 4, remarks: 'Excellent!' };
-  } else if (score >= 70) {
-    return { grade: 'B', points: 3, remarks: 'Good' };
-  } else if (score >= 60) {
-    return { grade: 'C', points: 2, remarks: 'Fair' };
-  } else if (score >= 50) {
-    return { grade: 'D', points: 1, remarks: 'Needs Improvement' };
-  } else {
-    return { grade: 'F', points: 0, remarks: 'Failed' };
-  }
-};
+interface GradeRange {
+  grade: string;
+  min_score: number;
+  max_score: number;
+  points: number;
+}
 
-// Updated helper function to calculate division based on GPA
-const calculateDivision = (gpa: number): string => {
-  if (gpa >= 3.5) {
-    return 'I';
-  } else if (gpa >= 3.0) {
-    return 'II';
-  } else if (gpa >= 2.0) {
-    return 'III';
-  } else if (gpa >= 1.0) {
-    return 'IV';
-  } else {
-    return 'F';
-  }
-};
-
-// Helper function to calculate GPA from points
-const calculateGPA = (points: number): number => {
-  if (points === 4) return 4.0;     // A
-  if (points === 3) return 3.0;     // B
-  if (points === 2) return 2.0;     // C
-  if (points === 1) return 1.0;     // D
-  return 0.0;                       // F
-};
+interface DivisionRange {
+  division: string;
+  min_points: number;
+  max_points: number;
+  description: string;
+}
 
 const StudentReportCard: React.FC<StudentReportCardProps> = ({
   studentId,
@@ -57,6 +33,104 @@ const StudentReportCard: React.FC<StudentReportCardProps> = ({
   term,
 }) => {
   const { students, subjects, exams, marks } = useSupabaseAppContext();
+  const [gradeRanges, setGradeRanges] = useState<GradeRange[]>([]);
+  const [divisionRanges, setDivisionRanges] = useState<DivisionRange[]>([]);
+
+  // Fetch active grading system and its ranges
+  useEffect(() => {
+    const fetchGradingSystem = async () => {
+      try {
+        // Get active grading system
+        const { data: activeSystem } = await supabase
+          .from('grading_systems')
+          .select('id')
+          .eq('is_active', true)
+          .single();
+
+        if (activeSystem) {
+          // Fetch grade ranges
+          const { data: grades } = await supabase
+            .from('grade_ranges')
+            .select('*')
+            .eq('grading_system_id', activeSystem.id)
+            .order('min_score', { ascending: false });
+
+          if (grades) {
+            setGradeRanges(grades);
+          }
+
+          // Fetch division ranges
+          const { data: divisions } = await supabase
+            .from('division_ranges')
+            .select('*')
+            .eq('grading_system_id', activeSystem.id)
+            .order('min_points', { ascending: false });
+
+          if (divisions) {
+            setDivisionRanges(divisions);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching grading system:', error);
+      }
+    };
+
+    fetchGradingSystem();
+  }, []);
+
+  // Helper function to calculate grade, points and remarks based on score using database ranges
+  const calculateGradeInfo = (score: number): { grade: string; points: number; remarks: string } => {
+    if (gradeRanges.length === 0) {
+      // Fallback to default ranges if no grading system is active
+      if (score >= 80) return { grade: 'A', points: 4, remarks: 'Excellent!' };
+      if (score >= 70) return { grade: 'B', points: 3, remarks: 'Good' };
+      if (score >= 60) return { grade: 'C', points: 2, remarks: 'Fair' };
+      if (score >= 50) return { grade: 'D', points: 1, remarks: 'Needs Improvement' };
+      return { grade: 'F', points: 0, remarks: 'Failed' };
+    }
+
+    for (const range of gradeRanges) {
+      if (score >= range.min_score && score <= range.max_score) {
+        let remarks = 'Good effort';
+        if (range.points >= 4) remarks = 'Excellent!';
+        else if (range.points >= 3) remarks = 'Good';
+        else if (range.points >= 2) remarks = 'Fair';
+        else if (range.points >= 1) remarks = 'Needs Improvement';
+        else remarks = 'Failed';
+        
+        return { 
+          grade: range.grade, 
+          points: range.points || 0, 
+          remarks 
+        };
+      }
+    }
+    return { grade: 'F', points: 0, remarks: 'Failed' };
+  };
+
+  // Helper function to calculate division based on average points using database ranges
+  const calculateDivision = (avgPoints: number): string => {
+    if (divisionRanges.length === 0) {
+      // Fallback to default ranges
+      if (avgPoints >= 3.5) return 'I';
+      if (avgPoints >= 3.0) return 'II';
+      if (avgPoints >= 2.0) return 'III';
+      if (avgPoints >= 1.0) return 'IV';
+      return 'F';
+    }
+
+    for (const range of divisionRanges) {
+      if (avgPoints >= range.min_points && avgPoints <= range.max_points) {
+        return range.division;
+      }
+    }
+    return 'F';
+  };
+
+  // Helper function to calculate GPA from average points
+  const calculateGPA = (avgPoints: number): number => {
+    return Math.round(avgPoints * 100) / 100;
+  };
 
   const student = useMemo(() => {
     return students.find(s => s.id === studentId);
