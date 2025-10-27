@@ -91,27 +91,47 @@ const Reports: React.FC = () => {
         
         toast.info("Uploading PDF to storage...");
         
+        console.log("Uploading file:", fileName, "Size:", pdfBlob.size);
+        
         // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('report-cards')
           .upload(fileName, pdfBlob, {
             contentType: 'application/pdf',
-            upsert: true
+            upsert: true,
+            cacheControl: '3600'
           });
         
         if (uploadError) {
           console.error("Error uploading PDF:", uploadError);
-          toast.error("Failed to upload PDF");
+          toast.error(`Failed to upload PDF: ${uploadError.message}`);
           return null;
         }
         
-        // Get public URL
+        console.log("Upload successful:", uploadData);
+        
+        // Get public URL using the path from upload response
         const { data: { publicUrl } } = supabase.storage
           .from('report-cards')
-          .getPublicUrl(fileName);
+          .getPublicUrl(uploadData.path);
+        
+        console.log("Generated public URL:", publicUrl);
+        
+        // Verify the file exists by checking if we can get the metadata
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('report-cards')
+          .list('', {
+            search: fileName
+          });
+        
+        if (fileError) {
+          console.error("Error verifying file:", fileError);
+        } else {
+          console.log("File verification:", fileData);
+        }
         
         setGeneratedPdfUrl(publicUrl);
-        toast.success("PDF ready for sharing!");
+        toast.success("PDF uploaded! Click to share via WhatsApp");
         return publicUrl;
       } else {
         // Download the PDF
