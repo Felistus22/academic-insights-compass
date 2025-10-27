@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useSupabaseAppContext } from "@/contexts/SupabaseAppContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -83,12 +84,35 @@ const Reports: React.FC = () => {
       pdf.addImage(imgData, "JPEG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
       
       if (forSharing) {
-        // Return blob URL for sharing
+        // Upload to Supabase Storage and return public URL
         const pdfBlob = pdf.output('blob');
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        setGeneratedPdfUrl(blobUrl);
+        const student = students.find(s => s.id === studentId);
+        const fileName = `${studentId}-${Date.now()}.pdf`;
+        
+        toast.info("Uploading PDF to storage...");
+        
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('report-cards')
+          .upload(fileName, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+        
+        if (uploadError) {
+          console.error("Error uploading PDF:", uploadError);
+          toast.error("Failed to upload PDF");
+          return null;
+        }
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('report-cards')
+          .getPublicUrl(fileName);
+        
+        setGeneratedPdfUrl(publicUrl);
         toast.success("PDF ready for sharing!");
-        return blobUrl;
+        return publicUrl;
       } else {
         // Download the PDF
         const student = students.find(s => s.id === studentId);
