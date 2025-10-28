@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,7 @@ const Login: React.FC = () => {
           const userRole = data.user.app_metadata?.role;
           const welcomeMessage = userRole === 'admin' ? 'Welcome back, Admin!' : 'Welcome back!';
           toast.success(welcomeMessage);
-          window.location.reload(); // Reload to initialize with real auth
+          navigate('/dashboard');
         }
       } else {
         // Use demo/offline authentication
