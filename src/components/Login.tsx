@@ -37,15 +37,10 @@ const Login: React.FC = () => {
         }
 
         if (data.user) {
-          // Check if user has admin role
           const userRole = data.user.app_metadata?.role;
-          if (userRole === 'admin') {
-            toast.success("Welcome back, Admin!");
-            window.location.reload(); // Reload to initialize with real auth
-          } else {
-            toast.error("Only admin users can access this system");
-            await supabase.auth.signOut();
-          }
+          const welcomeMessage = userRole === 'admin' ? 'Welcome back, Admin!' : 'Welcome back!';
+          toast.success(welcomeMessage);
+          window.location.reload(); // Reload to initialize with real auth
         }
       } else {
         // Use demo/offline authentication
@@ -124,7 +119,7 @@ const Login: React.FC = () => {
                   onChange={(e) => setUseSupabaseAuth(e.target.checked)}
                   className="rounded border border-input"
                 />
-                <span className="text-sm">Use Supabase Authentication (for admin access)</span>
+                <span className="text-sm">Use Supabase Authentication</span>
               </label>
             </div>
             
