@@ -28,60 +28,41 @@ const UserInvite: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Create user account with Supabase Auth
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+      // Call Edge Function to create user with proper permissions
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`https://nsfaxsswgshpseyeoqzm.supabase.co/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+          role
+        })
       });
 
-      if (authError) {
-        toast.error(authError.message || "Failed to create user account");
-        console.error("Auth error:", authError);
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        toast.error(result.error || "Failed to create user");
+        console.error("Create user error:", result.error);
         return;
       }
 
-        if (data.user) {
-          // Update user metadata with role
-          const { error: updateError } = await supabase.auth.admin.updateUserById(
-            data.user.id,
-            { 
-              app_metadata: { role: role } 
-            }
-          );
+      toast.success(`User ${firstName} ${lastName} created successfully! They can now log in.`);
+      
+      // Reset form
+      setEmail("");
+      setPassword("");
+      setFirstName("");
+      setLastName("");
+      setRole("teacher");
 
-          if (updateError) {
-            console.log("Could not set user role in metadata, continuing with database insert:", updateError);
-          }
-
-          // Add user to teachers table
-          const { error: dbError } = await supabase
-            .from('teachers')
-            .insert({
-              id: data.user.id,
-              firstname: firstName,
-              lastname: lastName,
-              email,
-              password: 'hashed', // This is just a placeholder since we're using Supabase auth
-              role: role as 'teacher' | 'admin',
-              subjectids: []
-            });
-
-        if (dbError) {
-          toast.error("User created but failed to add to database. Please try again.");
-          console.error("Database error:", dbError);
-        } else {
-          toast.success(`User ${firstName} ${lastName} created successfully!`);
-          // Reset form
-          setEmail("");
-          setPassword("");
-          setFirstName("");
-          setLastName("");
-          setRole("teacher");
-        }
-      }
     } catch (error) {
       toast.error("Failed to create user");
       console.error("Create user error:", error);
